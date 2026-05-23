@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yvirvaking">
+<meta name="theme-color" content="#0b1422">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<title>Yvirvaking — Heat Pump Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+// Redirect phone users to the dedicated mobile dashboard
+(function() {
+  var isPhone = /iPhone|Android.*Mobile|Mobile.*Android|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+             || (window.innerWidth <= 500 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+  if (isPhone) window.location.replace('Mobile%20Dashboard.html');
+})();
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="theme.js"></script>
+<script src="i18n.js"></script>
+<script src="config.js"></script>
+<script src="myuplink.js"></script>
+<script src="supabase.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0b1422; --bg2: #0f1a2c; --bg3: #131e30; --bg4: #1a2740;
+  --border: rgba(255,255,255,0.08); --text: #e8eef7; --text2: rgba(232,238,247,0.58); --text3: rgba(232,238,247,0.36);
+  --red: #F08A8A; --blue: #6BC4D6; --yellow: #F5C66B; --green: #79D89F;
+  --sans: 'Outfit', sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+html, body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--sans); }
+
+/* Noise overlay */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.4;
+}
+
+.page { position: relative; z-index: 1; }
+
+/* Hero */
+.hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 24px; position: relative; overflow: hidden; }
+
+/* Animated grid background */
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(58,134,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(58,134,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+}
+.hero-glow {
+  position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse at center, rgba(107,196,214,0.07) 0%, rgba(107,196,214,0.03) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(107,196,214,0.08); border: 1px solid rgba(107,196,214,0.2);
+  border-radius: 999px; padding: 5px 14px; font-size: 11px; font-family: var(--mono);
+  color: var(--red); text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 28px;
+}
+.hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 2s ease infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.hero-title {
+  font-size: clamp(42px, 7vw, 88px); font-weight: 800; letter-spacing: -0.04em;
+  line-height: 0.95; margin-bottom: 24px;
+}
+.hero-title em { font-style: normal; color: var(--blue); }
+.hero-title .sub { display: block; font-size: clamp(24px, 4vw, 48px); font-weight: 300; color: var(--text2); letter-spacing: -0.02em; }
+
+.hero-sub {
+  font-size: 17px; color: var(--text2); line-height: 1.6; max-width: 540px;
+  margin: 0 auto 40px;
+}
+
+.hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 60px; }
+.cta-btn { display: flex; align-items: center; gap: 8px; padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.2s; font-family: var(--sans); }
+.cta-primary { background: var(--blue); color: #0b1422; }
+.cta-primary:hover { background: #85cede; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(107,196,214,0.3); }
+.cta-secondary { background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border); }
+.cta-secondary:hover { border-color: var(--text3); background: rgba(255,255,255,0.08); }
+
+/* Platform tiers */
+.tiers { padding: 80px 24px; max-width: 1100px; margin: 0 auto; }
+.section-tag { font-size: 11px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.section-tag::before { content: ''; display: block; width: 24px; height: 1px; background: var(--border); }
+.section-heading { font-size: clamp(28px, 4vw, 40px); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+.section-sub { font-size: 16px; color: var(--text2); margin-bottom: 50px; max-width: 500px; }
+
+.tier-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+.tier-card {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px; cursor: pointer; text-decoration: none; color: var(--text);
+  transition: all 0.2s; display: block; position: relative; overflow: hidden;
+}
+.tier-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent, var(--red)); opacity: 0;
+  transition: opacity 0.2s;
+}
+.tier-card:hover { border-color: var(--text3); transform: translateY(-3px); box-shadow: 0 16px 48px rgba(0,0,0,0.4); }
+.tier-card:hover::before { opacity: 1; }
+.tier-card.red { --accent: #F08A8A; }
+.tier-card.blue { --accent: #6BC4D6; }
+.tier-card.green { --accent: #79D89F; }
+.tier-card.gold { --accent: #F5C66B; }
+
+.tier-num { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+.tier-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.tier-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+.tier-desc { font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 20px; }
+.tier-features { display: flex; flex-direction: column; gap: 6px; margin-bottom: 24px; }
+.tier-feature { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text2); }
+.tier-feature::before { content: '→'; color: var(--text3); flex-shrink: 0; font-family: var(--mono); font-size: 11px; margin-top: 1px; }
+.tier-link { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text3); transition: color 0.15s; }
+.tier-card:hover .tier-link { color: var(--text); }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin: 60px auto; max-width: 900px; }
+.hero-stat { background: var(--bg3); padding: 28px 24px; text-align: center; }
+.hero-stat-val { font-size: 40px; font-weight: 800; font-family: var(--mono); letter-spacing: -0.04em; line-height: 1; }
+.hero-stat-lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 6px; font-family: var(--mono); }
+
+/* Arch diagram */
+.arch { padding: 40px 24px 80px; max-width: 900px; margin: 0 auto; }
+.arch-diagram { background: var(--bg3); border: 1px solid var(--border); border-radius: 16px; padding: 32px; }
+.arch-row { display: flex; gap: 0; position: relative; align-items: center; margin-bottom: 0; }
+.arch-box { flex: 1; background: var(--bg4); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.arch-box-title { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+.arch-box-sub { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.arch-arrow { width: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text3); font-family: var(--mono); font-size: 16px; }
+.arch-center { background: rgba(58,134,255,0.06); border-color: rgba(58,134,255,0.3); }
+.arch-label { font-size: 10px; font-family: var(--mono); color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+
+/* Footer */
+footer { border-top: 1px solid var(--border); padding: 32px 24px; text-align: center; }
+.footer-logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.footer-logo-mark { width: 28px; height: 28px; background: var(--blue); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+.footer-name { font-size: 15px; font-weight: 700; }
+.footer-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* Connection bar */
+.conn-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; height: 44px;
+  background: rgba(9,17,29,0.85); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border); font-size: 12px;
+  font-family: var(--mono);
+}
+.conn-status { display: flex; align-items: center; gap: 8px; }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+.conn-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s ease infinite; }
+.conn-dot.error { background: var(--red); }
+.conn-label { color: var(--text2); }
+.conn-meta { color: var(--text3); }
+.conn-actions { display: flex; gap: 8px; align-items: center; }
+.conn-btn {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text2); font-size: 11px;
+  font-family: var(--mono); cursor: pointer; transition: all 0.15s;
+}
+.conn-btn:hover { border-color: var(--text3); color: var(--text); }
+.conn-btn.primary { background: var(--blue); border-color: var(--blue); color: #0b1422; }
+.conn-btn.primary:hover { background: #85cede; }
+
+/* Offset hero for the fixed bar */
+.page { padding-top: 44px; }
+
+/* Stat shimmer when loading */
+@keyframes shimmer {
+  0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; }
+}
+.stat-loading { animation: shimmer 1.4s ease infinite; }
+
+@media (max-width: 768px) {
+  .tier-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .conn-meta { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="auth-gate" style="position:fixed;inset:0;background:#0b1422;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;"><svg width="28" height="28" viewBox="0 0 28 28" style="animation:ag-spin 0.9s linear infinite"><circle cx="14" cy="14" r="11" stroke="rgba(238,242,247,0.1)" stroke-width="3" fill="none"/><path d="M14 3 A11 11 0 0 1 25 14" stroke="#6BC4D6" stroke-width="3" stroke-linecap="round" fill="none"/></svg><div style="color:rgba(238,242,247,0.35);font-size:13px;font-family:Outfit,sans-serif;font-weight:500;letter-spacing:0.02em">Checking session…</div><style>@keyframes ag-spin{to{transform:rotate(360deg)}}</style></div>
+<script>
+(async function(){
+  if(!window.YV_AUTH){document.getElementById('auth-gate').style.display='none';return;}
+  const u=await YV_AUTH.requireRole('admin','installer');
+  if(u){document.getElementById('auth-gate').style.display='none';const _ld=window.YV?.loadFromSupabase||window.YV_loadFromSupabase;if(_ld)_ld();}
+})();
+</script>
+<div class="page">
+
+  <!-- MyUplink connection bar -->
+  <div class="conn-bar">
+    <div class="conn-status">
+      <div class="conn-dot" id="connDot"></div>
+      <span class="conn-label" id="connLabel">MyUplink — not connected</span>
+      <span class="conn-meta" id="connMeta"></span>
+    </div>
+    <div class="conn-actions" id="connActions">
+      <button class="conn-btn primary" onclick="MyUplink.login()">Connect MyUplink</button>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Faroe Islands · CTC Heat Pump Management
+    </div>
+
+    <h1 class="hero-title">
+      <em>Yvirvaking</em>
+      <span class="sub">by Maria Poulsen</span>
+    </h1>
+
+    <p class="hero-sub">
+      Professional heat pump monitoring and service management built for the Faroe Islands.
+      Real-time status, remote control, and predictive maintenance — powered by MyUplink.
+    </p>
+
+    <div class="hero-cta">
+      <a href="Tier1 Dashboard.html" class="cta-btn cta-primary">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="1" y="1" width="6" height="6" rx="1.5" stroke="white" strokeWidth="1.3"/><rect x="8" y="1" width="6" height="6" rx="1.5" stroke="white" strokeWidth="1.3"/><rect x="1" y="8" width="6" height="6" rx="1.5" stroke="white" strokeWidth="1.3"/><rect x="8" y="8" width="6" height="6" rx="1.5" stroke="white" strokeWidth="1.3"/></svg>
+        Open Company Dashboard
+      </a>
+      <a href="Tier2 Service.html" class="cta-btn cta-secondary">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M10 2.5a3 3 0 00-3 3c0 .4.07.77.2 1.12L2.5 11.2a1.2 1.2 0 001.7 1.7l4.7-4.7c.35.13.72.2 1.1.2a3 3 0 000-6z" stroke="currentColor" strokeWidth="1.3"/></svg>
+        Service View
+      </a>
+      <a href="Tier25 Field App.html" class="cta-btn cta-secondary">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="3" y="1" width="9" height="13" rx="2" stroke="currentColor" strokeWidth="1.3"/><circle cx="7.5" cy="11.5" r="0.8" fill="currentColor"/><path d="M5.5 4.5h4M5.5 6.5h3" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/></svg>
+        Field App
+      </a>
+      <a href="Tier3 App.html" class="cta-btn cta-secondary">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="3" y="1" width="9" height="13" rx="2" stroke="currentColor" strokeWidth="1.3"/><circle cx="7.5" cy="11.5" r="0.8" fill="currentColor"/></svg>
+        Customer App
+      </a>
+      <a href="Admin.html" class="cta-btn cta-secondary" style="border-color:rgba(232,160,32,0.3);color:#F5C66B;">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="6" stroke="currentColor" strokeWidth="1.3"/><path d="M7.5 4v3.5l2.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+        Admin Panel
+      </a>
+    </div>
+
+    <!-- Live stats -->
+    <div class="stats-row">
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="statPumps" style="color:#6BC4D6">—</div>
+        <div class="hero-stat-lbl">Pumps Online</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="statUptime" style="color:#79D89F">—</div>
+        <div class="hero-stat-lbl">Fleet Uptime</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="statFaults" style="color:#F08A8A">—</div>
+        <div class="hero-stat-lbl">Active Faults</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-val" id="statCop" style="color:#F5C66B">—</div>
+        <div class="hero-stat-lbl">Average COP</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platform tiers -->
+  <section class="tiers">
+    <div class="section-tag">Platform</div>
+    <h2 class="section-heading">Three views.<br>One platform.</h2>
+    <p class="section-sub">Role-based access for every stakeholder — from company-wide operations to the individual homeowner.</p>
+
+    <div class="tier-grid">
+      <!-- Tier 1 -->
+      <a href="Tier1 Dashboard.html" class="tier-card red">
+        <div class="tier-num">Tier 1 · Company</div>
+        <div class="tier-icon" style="background:rgba(230,57,70,0.1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="3" width="20" height="14" rx="2" stroke="#F08A8A" strokeWidth="1.5"/>
+            <path d="M8 21h8M12 17v4" stroke="#F08A8A" strokeWidth="1.5" strokeLinecap="round"/>
+            <circle cx="7" cy="10" r="2" fill="#F08A8A" opacity="0.6"/>
+            <circle cx="12" cy="8" r="2" fill="#F08A8A"/>
+            <circle cx="17" cy="11" r="2" fill="#F08A8A" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="tier-title">Central Dashboard</div>
+        <div class="tier-desc">Full fleet overview with live Faroe Islands map, alert triage, and performance analytics.</div>
+        <div class="tier-features">
+          <div class="tier-feature">Interactive map with all 15 pumps</div>
+          <div class="tier-feature">Color-coded fault/warning/ok pins</div>
+          <div class="tier-feature">Energy consumption trends</div>
+          <div class="tier-feature">Prioritized alert queue</div>
+        </div>
+        <div class="tier-link">Open Dashboard <span>→</span></div>
+      </a>
+
+      <!-- Tier 2 -->
+      <a href="Tier2 Service.html" class="tier-card blue">
+        <div class="tier-num">Tier 2 · Installer</div>
+        <div class="tier-icon" style="background:rgba(58,134,255,0.1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M14 3.5a4.5 4.5 0 00-4.5 4.5c0 .6.1 1.15.3 1.67L3 16.5a1.8 1.8 0 002.55 2.55l6.83-6.8c.52.2 1.07.3 1.62.3A4.5 4.5 0 0014 3.5z" stroke="#6BC4D6" strokeWidth="1.5"/>
+          </svg>
+        </div>
+        <div class="tier-title">Service View</div>
+        <div class="tier-desc">Deep-dive pump diagnostics, work order management, remote settings, and service history.</div>
+        <div class="tier-features">
+          <div class="tier-feature">Live temperature &amp; COP graphs</div>
+          <div class="tier-feature">Work orders and checklists</div>
+          <div class="tier-feature">Remote MyUplink settings</div>
+          <div class="tier-feature">Customer communication log</div>
+        </div>
+        <div class="tier-link">Open Service View <span>→</span></div>
+      </a>
+
+      <!-- Tier 2.5 -->
+      <a href="Tier25 Field App.html" class="tier-card green">
+        <div class="tier-num">Tier 2.5 · Technician</div>
+        <div class="tier-icon" style="background:rgba(30,158,94,0.1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="3" stroke="#79D89F" strokeWidth="1.5"/>
+            <circle cx="12" cy="18" r="1" fill="#79D89F"/>
+            <path d="M9 8h6M9 11.5h4" stroke="#79D89F" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="16" cy="6" r="3" fill="rgba(30,158,94,0.15)" stroke="#79D89F" strokeWidth="1.2"/>
+            <path d="M15 6l.8.8L17.2 5" stroke="#79D89F" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        <div class="tier-title">Field App</div>
+        <div class="tier-desc">Mobile-first job list for technicians in the field — alerts, work orders, and on-call toggle.</div>
+        <div class="tier-features">
+          <div class="tier-feature">Active fault alerts per technician</div>
+          <div class="tier-feature">Job list with call/email shortcuts</div>
+          <div class="tier-feature">On-call toggle with team sync</div>
+          <div class="tier-feature">Quick link to full Service View</div>
+        </div>
+        <div class="tier-link">Open Field App <span>→</span></div>
+      </a>
+
+      <!-- Tier 3 -->
+      <a href="Tier3 App.html" class="tier-card green">
+        <div class="tier-num">Tier 3 · Customer</div>
+        <div class="tier-icon" style="background:rgba(34,197,94,0.1)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="3" stroke="#79D89F" strokeWidth="1.5"/>
+            <circle cx="12" cy="18" r="1" fill="#79D89F"/>
+            <path d="M9 7h6M9 10h4" stroke="#79D89F" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div class="tier-title">Hitavaktin App</div>
+        <div class="tier-desc">White-labeled customer app for temperature control, energy insights, and direct service chat.</div>
+        <div class="tier-features">
+          <div class="tier-feature">Temperature setpoint dial</div>
+          <div class="tier-feature">Weekly energy &amp; COP reports</div>
+          <div class="tier-feature">Hot water boost &amp; modes</div>
+          <div class="tier-feature">Direct support messaging</div>
+        </div>
+        <div class="tier-link">Open Customer App <span>→</span></div>
+      </a>
+
+      <!-- Admin -->
+      <a href="Admin.html" class="tier-card gold" style="grid-column:1/-1;display:flex;flex-direction:row;align-items:center;gap:28px;">
+        <div style="flex-shrink:0">
+          <div class="tier-num">Super Admin · Platform</div>
+          <div class="tier-icon" style="background:rgba(232,160,32,0.1);margin-bottom:0">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L14.5 8.5H21L15.5 12.5L17.5 19L12 15.5L6.5 19L8.5 12.5L3 8.5H9.5L12 2Z" stroke="#F5C66B" strokeWidth="1.5" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <div style="flex:1">
+          <div class="tier-title" style="color:#F5C66B">White-Label Admin Panel</div>
+          <div class="tier-desc" style="margin-bottom:0">Manage tenants, branding, API credentials, and users across the entire platform. Configure per-company colors, logos, and MyUplink OAuth for each white-label deployment.</div>
+        </div>
+        <div style="flex-shrink:0;display:flex;gap:16px;flex-wrap:wrap;">
+          <div style="text-align:center"><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:#F5C66B">3</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em">Tenants</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:#F5C66B">47</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em">Pumps</div></div>
+          <div style="text-align:center"><div style="font-size:22px;font-weight:800;font-family:var(--mono);color:#F5C66B">12</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:0.06em">Users</div></div>
+        </div>
+        <div class="tier-link" style="flex-shrink:0">Open Admin <span>→</span></div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="arch">
+    <div class="section-tag">Architecture</div>
+    <h2 class="section-heading" style="margin-bottom:30px">How it connects</h2>
+    <div class="arch-diagram">
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <!-- Row 1 -->
+        <div>
+          <div class="arch-label">Data Layer</div>
+          <div style="display:flex; gap:10px;">
+            <div class="arch-box arch-center" style="flex:2">
+              <div class="arch-box-title" style="color:#6BC4D6">MyUplink API</div>
+              <div class="arch-box-sub">Real-time telemetry · Remote control · Alarms · Settings</div>
+            </div>
+            <div class="arch-box" style="flex:1">
+              <div class="arch-box-title">CTC Heat Pumps</div>
+              <div class="arch-box-sub">EcoHeat 400 / EcoAir 520 / EcoAir 620</div>
+            </div>
+          </div>
+        </div>
+        <!-- Divider -->
+        <div style="display:flex; align-items:center; gap:6px; padding:0 8px;">
+          <div style="flex:1; height:1px; background:#2a3f58;"></div>
+          <div style="font-size:10px; font-family:'JetBrains Mono'; color:#4a6480; text-transform:uppercase; letter-spacing:0.08em;">Yvirvaking Platform</div>
+          <div style="flex:1; height:1px; background:#2a3f58;"></div>
+        </div>
+        <!-- Row 2 -->
+        <div>
+          <div class="arch-label">Access Tiers</div>
+          <div style="display:flex; gap:10px;">
+            <div class="arch-box" style="border-color:rgba(230,57,70,0.3)">
+              <div class="arch-box-title" style="color:#F08A8A">Company Admin</div>
+              <div class="arch-box-sub">Full fleet · All alerts · Analytics</div>
+            </div>
+            <div class="arch-box" style="border-color:rgba(58,134,255,0.3)">
+              <div class="arch-box-title" style="color:#6BC4D6">Installer / Tech</div>
+              <div class="arch-box-sub">Assigned pumps · Work orders · Settings</div>
+            </div>
+            <div class="arch-box" style="border-color:rgba(34,197,94,0.3)">
+              <div class="arch-box-title" style="color:#79D89F">Customer</div>
+              <div class="arch-box-sub">Own pump · Control · Support</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MyUplink Diagnostic -->
+  <section id="diagSection" style="display:none; padding:0 24px 60px; max-width:700px; margin:0 auto;">
+    <div class="section-tag">Connection</div>
+    <h2 class="section-heading" style="margin-bottom:20px">MyUplink Diagnostic</h2>
+    <div id="diagCards" style="display:flex; flex-direction:column; gap:10px;"></div>
+    <div style="margin-top:16px; background:#0d1520; border:1px solid #2a3f58; border-radius:12px; padding:16px 18px;">
+      <div style="font-size:11px; font-family:'JetBrains Mono'; color:#4a6480; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">How to start the local server</div>
+      <div style="background:#080f1a; border-radius:8px; padding:10px 14px; font-family:'JetBrains Mono'; font-size:12px; color:#7f9ab5; margin-bottom:8px;">
+        cd "<span style="color:#eef2f7">/Users/heinijoensen/Yvirvaking V 1.0</span>"<br>
+        python3 -m http.server <span style="color:#6BC4D6">8080</span>
+      </div>
+      <div style="font-size:12px; color:#4a6480;">Open <span style="color:#6BC4D6; font-family:'JetBrains Mono'">https://yvirvakingtest.netlify.app</span> or run the local server on port 8080.</div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-logo">
+      <div class="footer-logo-mark">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1.5 L12.5 5 L12.5 12.5 L1.5 12.5 L1.5 5 Z" stroke="white" strokeWidth="1.3" fill="none"/>
+          <path d="M4.5 12.5 L4.5 8 L9.5 8 L9.5 12.5" stroke="white" strokeWidth="1.2" fill="none"/>
+        </svg>
+      </div>
+      <div>
+        <div class="footer-name">Yvirvaking</div>
+        <div class="footer-sub">Maria Poulsen · Faroe Islands</div>
+      </div>
+    </div>
+    <div style="font-size:12px; color:#4a6480; font-family:'JetBrains Mono'; margin-bottom:10px;">
+      Powered by CTC · MyUplink · Built for the Faroe Islands
+    </div>
+    <a href="Mobile Dashboard.html" style="font-size:11px; color:#4a6480; font-family:'JetBrains Mono'; text-decoration:none; border:1px solid #2a3f58; border-radius:6px; padding:4px 10px; display:inline-block; transition:color 0.15s;" onmouseover="this.style.color='#7f9ab5'" onmouseout="this.style.color='#4a6480'">
+      📱 Mobile Dashboard →
+    </a>
+  </footer>
+</div>
+
+<script>
+(async () => {
+  const wasOAuthCallback = window.location.search.includes('code=');
+  await MyUplink.init();
+
+  // After a successful OAuth callback, send the user straight to the dashboard
+  if (wasOAuthCallback && MyUplink.isAuthenticated()) {
+    window.location.href = 'Tier1%20Dashboard.html';
+    return;
+  }
+
+  const dot     = document.getElementById('connDot');
+  const label   = document.getElementById('connLabel');
+  const meta    = document.getElementById('connMeta');
+  const actions = document.getElementById('connActions');
+
+  function renderLangBtn() {
+    const btn = document.createElement('button');
+    btn.className = 'conn-btn';
+    btn.style.fontFamily = 'var(--mono)';
+    btn.textContent = I18n.getLang().toUpperCase();
+    btn.title = 'Switch language';
+    btn.onclick = () => {
+      const langs = ['en','da','sv'];
+      I18n.setLang(langs[(langs.indexOf(I18n.getLang())+1) % langs.length]);
+      // re-render whichever state we're in
+      if (dot.classList.contains('live')) setConnected(_lastSystemCount);
+      else if (dot.classList.contains('error')) setError(_lastError);
+      else setDisconnected();
+    };
+    return btn;
+  }
+
+  let _lastSystemCount = 0, _lastError = '';
+
+  function setConnected(systemCount) {
+    _lastSystemCount = systemCount;
+    dot.className     = 'conn-dot live';
+    label.textContent = `MyUplink — ${T('conn.connected').toLowerCase()}`;
+    meta.textContent  = systemCount > 0 ? `${systemCount} ${systemCount > 1 ? T('conn.systems') : T('conn.system')}` : '';
+    actions.innerHTML = '';
+    actions.appendChild(renderLangBtn());
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'conn-btn';
+    logoutBtn.textContent = T('conn.disconnect');
+    logoutBtn.onclick = () => { MyUplink.logout(); location.reload(); };
+    actions.appendChild(logoutBtn);
+    Theme.renderToggle(actions);
+  }
+
+  function setDisconnected() {
+    dot.className     = 'conn-dot';
+    label.textContent = `MyUplink — ${T('conn.disconnected').toLowerCase()}`;
+    meta.textContent  = '';
+    actions.innerHTML = '';
+    actions.appendChild(renderLangBtn());
+    const connectBtn = document.createElement('button');
+    connectBtn.className = 'conn-btn primary';
+    connectBtn.textContent = T('conn.connect');
+    connectBtn.onclick = () => MyUplink.login();
+    actions.appendChild(connectBtn);
+    Theme.renderToggle(actions);
+    document.getElementById('statPumps').textContent  = '15';
+    document.getElementById('statUptime').textContent = '86.7%';
+    document.getElementById('statFaults').textContent = '2';
+    document.getElementById('statCop').textContent    = '3.2';
+  }
+
+  function setError(msg) {
+    _lastError = msg;
+    dot.className     = 'conn-dot error';
+    label.textContent = `MyUplink — ${msg}`;
+    meta.textContent  = '';
+    actions.innerHTML = '';
+    actions.appendChild(renderLangBtn());
+    const reconnBtn = document.createElement('button');
+    reconnBtn.className = 'conn-btn primary';
+    reconnBtn.textContent = T('conn.reconnect');
+    reconnBtn.onclick = () => MyUplink.login();
+    actions.appendChild(reconnBtn);
+    Theme.renderToggle(actions);
+  }
+
+  async function loadFleetStats() {
+    ['statPumps','statUptime','statFaults','statCop'].forEach(id => {
+      document.getElementById(id).classList.add('stat-loading');
+    });
+
+    // Step 1: verify token is present
+    const token = localStorage.getItem('yvirvaking_myuplink_tokens');
+    if (!token) { setDisconnected(); return; }
+    console.log('[YV] Tokens in storage:', JSON.parse(token));
+
+    // Step 2: test raw API call to /v2/systems/me
+    let systems;
+    try {
+      const cfg = window.YVIRVAKING_CONFIG.myuplink;
+      const t   = JSON.parse(token).access_token;
+      const res = await fetch(cfg.apiBase + '/systems/me', {
+        headers: { 'Authorization': 'Bearer ' + t }
+      });
+      console.log('[YV] /systems/me status:', res.status);
+      const raw = await res.clone().text();
+      console.log('[YV] /systems/me raw response:', raw);
+
+      if (!res.ok) {
+        setError(`API ${res.status} — check console`);
+        ['statPumps','statUptime','statFaults','statCop'].forEach(id =>
+          document.getElementById(id).classList.remove('stat-loading'));
+        return;
+      }
+      const data = JSON.parse(raw);
+      systems = data.systems || data || [];
+    } catch (err) {
+      console.error('[YV] /systems/me fetch failed:', err);
+      // CORS or network error
+      setError(err.message.includes('fetch') || err.name === 'TypeError'
+        ? 'CORS blocked — see console'
+        : err.message);
+      ['statPumps','statUptime','statFaults','statCop'].forEach(id =>
+        document.getElementById(id).classList.remove('stat-loading'));
+      return;
+    }
+
+    // Step 3: no pumps registered on this account yet — still "connected"
+    console.log('[YV] Systems found:', systems.length, systems);
+    setConnected(systems.length);
+
+    if (systems.length === 0) {
+      ['statPumps','statUptime','statFaults','statCop'].forEach(id => {
+        document.getElementById(id).textContent = '0';
+        document.getElementById(id).classList.remove('stat-loading');
+      });
+      meta.textContent = 'no systems — using demo data';
+      // Fall back to demo stats
+      document.getElementById('statPumps').textContent  = '15 ✦';
+      document.getElementById('statUptime').textContent = '86.7%';
+      document.getElementById('statFaults').textContent = '2';
+      document.getElementById('statCop').textContent    = '3.2';
+      return;
+    }
+
+    // Step 4: full fleet load
+    try {
+      const fleet = await MyUplink.getFleet();
+      const faults = fleet.filter(p => p.hasAlarm).length;
+      const warns  = fleet.filter(p => p.hasWarn).length;
+      const online = fleet.filter(p => !p.hasAlarm).length;
+      const uptime = ((online / fleet.length) * 100).toFixed(1);
+      const cops   = fleet.map(p => p.cop).filter(v => v !== null);
+      const avgCop = cops.length ? (cops.reduce((a,b) => a+b, 0) / cops.length).toFixed(1) : '—';
+
+      document.getElementById('statPumps').textContent  = online;
+      document.getElementById('statUptime').textContent = uptime + '%';
+      document.getElementById('statFaults').textContent = faults + (warns ? ` (+${warns}⚠)` : '');
+      document.getElementById('statCop').textContent    = avgCop;
+
+      // Sync live readings back to Supabase so dashboards get real data
+      if (window.YV_AUTH?.syncMyUplink) {
+        YV_AUTH.syncMyUplink().then(n => {
+          if (n > 0) meta.textContent += ` · ${n} live`;
+        });
+      }
+
+      setTimeout(loadFleetStats, 60_000);
+    } catch (err) {
+      console.error('[YV] getFleet error:', err);
+      setError(err.message);
+    } finally {
+      ['statPumps','statUptime','statFaults','statCop'].forEach(id =>
+        document.getElementById(id).classList.remove('stat-loading'));
+    }
+  }
+
+  if (MyUplink.isAuthenticated()) {
+    loadFleetStats();
+  } else {
+    setDisconnected();
+  }
+
+  MyUplink.onAuthChange(authenticated => {
+    if (authenticated) loadFleetStats();
+    else setDisconnected();
+  });
+
+  // ── Diagnostics ──────────────────────────────────────────────
+  runDiagnostics();
+})();
+
+function runDiagnostics() {
+  const cfg     = window.YVIRVAKING_CONFIG?.myuplink || {};
+  const section = document.getElementById('diagSection');
+  const cards   = document.getElementById('diagCards');
+  if (!section || !cards) return;
+
+  const checks = [];
+
+  // 1. Protocol check
+  const isHttp = location.protocol === 'http:' || location.protocol === 'https:';
+  checks.push({
+    ok: isHttp,
+    title: 'Served over HTTP',
+    detail: isHttp
+      ? `Running at ${location.origin}`
+      : 'Opened as a file:// URL. OAuth requires a real HTTP server. Run: python3 -m http.server 8080',
+  });
+
+  // 2. Redirect URI match
+  const uriMatch = cfg.redirectUri && cfg.redirectUri.startsWith(location.origin);
+  checks.push({
+    ok: uriMatch,
+    title: 'Redirect URI matches',
+    detail: uriMatch
+      ? `${cfg.redirectUri} ✓`
+      : `Config says "${cfg.redirectUri}" but you're at "${location.origin}". Either start the server on port 8080 or update config.js + your MyUplink app settings.`,
+  });
+
+  // 3. Tokens present
+  const tokens = (() => { try { return JSON.parse(localStorage.getItem('yvirvaking_myuplink_tokens')); } catch { return null; } })();
+  const hasTokens = !!tokens?.access_token;
+  checks.push({
+    ok: hasTokens,
+    title: 'Access token stored',
+    detail: hasTokens
+      ? `Stored at ${new Date(tokens.stored_at).toLocaleTimeString()} · expires_in ${tokens.expires_in}s`
+      : 'No token found. Click "Connect MyUplink" to authenticate.',
+  });
+
+  // 4. Token age
+  if (hasTokens) {
+    const ageSec = Math.round((Date.now() - tokens.stored_at) / 1000);
+    const expired = ageSec > (tokens.expires_in || 3600);
+    checks.push({
+      ok: !expired,
+      title: 'Token not expired',
+      detail: expired
+        ? `Token is ${Math.round(ageSec/60)} min old (expires after ${Math.round((tokens.expires_in||3600)/60)} min). Reconnect to refresh.`
+        : `Token is ${Math.round(ageSec/60)} min old — still valid.`,
+    });
+  }
+
+  // 5. Client ID present
+  checks.push({
+    ok: !!cfg.clientId,
+    title: 'Client ID configured',
+    detail: cfg.clientId ? cfg.clientId.slice(0,8) + '…' : 'Missing in config.js',
+  });
+
+  // 6. Client secret present
+  checks.push({
+    ok: !!cfg.clientSecret,
+    title: 'Client secret configured',
+    detail: cfg.clientSecret ? '✓ set (hidden)' : 'Missing in config.js — check dev.myuplink.com',
+  });
+
+  // Render
+  const allOk = checks.every(c => c.ok);
+  section.style.display = allOk ? 'none' : 'block';
+
+  cards.innerHTML = '';
+  checks.forEach(c => {
+    const el = document.createElement('div');
+    el.style.cssText = `display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:${c.ok?'rgba(30,158,94,0.06)':'rgba(192,57,43,0.06)'};border:1px solid ${c.ok?'rgba(30,158,94,0.2)':'rgba(192,57,43,0.25)'}`;
+    el.innerHTML = `
+      <div style="width:20px;height:20px;border-radius:50%;background:${c.ok?'#79D89F':'#F08A8A'};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px">${c.ok?'✓':'✗'}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:3px">${c.title}</div>
+        <div style="font-size:11px;color:#7f9ab5;font-family:'JetBrains Mono';line-height:1.5">${c.detail}</div>
+      </div>`;
+    cards.appendChild(el);
+  });
+
+  // Always show section if there are failures so the user sees the guide
+  if (!allOk) section.style.display = 'block';
+}
+</script>
+</body>
+</html>

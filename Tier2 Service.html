@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yvirvaking Service">
+<meta name="theme-color" content="#0b1422">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<title>Yvirvaking — Service View</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="theme.js"></script>
+<script src="i18n.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script src="shared-data.js"></script>
+<script src="users.js"></script>
+<script src="notifications.js"></script>
+<script src="minuba.js"></script>
+<script src="supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0b1422; --bg2: #0f1a2c; --bg3: #131e30; --bg4: #1a2740;
+  --border: rgba(255,255,255,0.08); --text: #e8eef7; --text2: rgba(232,238,247,0.58); --text3: rgba(232,238,247,0.36);
+  --red: #F08A8A; --blue: #6BC4D6; --yellow: #F5C66B; --green: #79D89F;
+  --mono: 'JetBrains Mono', monospace; --sans: 'Outfit', sans-serif;
+}
+html, body { width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); overflow: hidden; }
+::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.anim-in { animation: fadeIn 0.25s ease forwards; }
+
+/* Layout */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.nav { height: 50px; background: var(--bg2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; padding: 0 16px; flex-shrink: 0; }
+.nav-back { display: flex; align-items: center; gap: 6px; color: var(--text2); font-size: 12px; cursor: pointer; text-decoration: none; padding: 4px 8px; border-radius: 5px; transition: all 0.12s; }
+.nav-back:hover { background: var(--bg3); color: var(--text); }
+.nav-sep { color: var(--text3); }
+.breadcrumb { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+.breadcrumb.active { color: var(--text); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.btn { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; font-family: var(--sans); cursor: pointer; border: none; transition: all 0.12s; display: flex; align-items: center; gap: 6px; }
+.btn-primary { background: var(--blue); color: #0b1422; }
+.btn-primary:hover { background: #85cede; }
+.btn-danger { background: rgba(230,57,70,0.15); color: var(--red); border: 1px solid rgba(230,57,70,0.3); }
+.btn-danger:hover { background: rgba(230,57,70,0.25); }
+.btn-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text3); }
+
+.body { flex: 1; display: flex; overflow: hidden; }
+/* Sidebar */
+.sidebar { width: 220px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; padding: 10px 0; }
+.pump-item { padding: 8px 12px; cursor: pointer; display: flex; gap: 8px; align-items: center; border-radius: 6px; margin: 0 6px; transition: background 0.1s; }
+.pump-item:hover { background: var(--bg3); }
+.pump-item.active { background: var(--bg4); }
+.pump-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pump-item-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pump-item-id { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+.sidebar-section { padding: 8px 12px 4px; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); font-family: var(--mono); margin-top: 8px; }
+
+/* Main content */
+.content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 20px; background: var(--bg2); flex-shrink: 0; }
+.tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; white-space: nowrap; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.card-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); font-family: var(--mono); }
+.card-body { padding: 16px; }
+
+/* Stats grid */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.stat-val { font-size: 26px; font-weight: 700; font-family: var(--mono); letter-spacing: -0.03em; line-height: 1; }
+.stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; font-family: var(--mono); }
+.stat-sub { font-size: 10px; color: var(--text2); margin-top: 6px; }
+
+/* Data rows */
+.data-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.data-row:last-child { border-bottom: none; }
+.data-key { font-size: 12px; color: var(--text2); }
+.data-val { font-size: 12px; font-family: var(--mono); font-weight: 500; color: var(--text); }
+
+/* Alerts */
+.alert-item { padding: 10px 12px; border-radius: 7px; margin-bottom: 6px; display: flex; gap: 10px; align-items: flex-start; }
+.alert-item.fault { background: rgba(230,57,70,0.08); border: 1px solid rgba(230,57,70,0.2); }
+.alert-item.warning { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+.alert-item.ok { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); }
+.alert-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; }
+.alert-msg { font-size: 13px; font-weight: 500; }
+.alert-time { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+
+/* Work order */
+.wo-row { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; cursor: pointer; transition: background 0.1s; }
+.wo-row:hover { background: var(--bg3); }
+.wo-priority { width: 3px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+.wo-type { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.wo-title { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 1px; }
+.wo-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.wo-status { padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; font-family: var(--mono); white-space: nowrap; }
+.wo-status.open { background: rgba(230,57,70,0.15); color: var(--red); }
+.wo-status.in_progress { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.wo-status.scheduled { background: rgba(58,134,255,0.15); color: var(--blue); }
+.wo-status.completed { background: rgba(34,197,94,0.15); color: var(--green); }
+
+/* Settings control */
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 13px; color: var(--text); }
+.setting-sublabel { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.slider-wrap { display: flex; align-items: center; gap: 8px; }
+.slider-val { font-size: 13px; font-family: var(--mono); font-weight: 600; color: var(--blue); min-width: 40px; text-align: right; }
+input[type=range] { -webkit-appearance: none; width: 120px; height: 4px; border-radius: 2px; background: var(--bg4); outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--blue); cursor: pointer; }
+
+/* Live graph */
+.graph-svg { width: 100%; display: block; }
+.grid-line { stroke: #2a3f58; stroke-width: 0.5; }
+.graph-label { font-size: 8px; fill: #4a6480; font-family: JetBrains Mono; }
+
+/* Service log */
+.log-entry { padding: 12px 14px; border-left: 2px solid var(--border); margin-left: 8px; margin-bottom: 2px; position: relative; }
+.log-entry::before { content: ''; position: absolute; left: -5px; top: 16px; width: 8px; height: 8px; border-radius: 50%; background: var(--bg3); border: 2px solid var(--border); }
+.log-entry.fault::before { border-color: var(--red); }
+.log-entry.service::before { border-color: var(--blue); }
+.log-entry.install::before { border-color: var(--green); }
+.log-date { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.log-title { font-size: 13px; font-weight: 500; color: var(--text); margin-top: 2px; }
+.log-desc { font-size: 11px; color: var(--text2); margin-top: 3px; line-height: 1.5; }
+
+/* Two column layout */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+/* Checklist */
+.check-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.check-item:last-child { border-bottom: none; }
+.check-box { width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.1s; }
+.check-box.checked { background: var(--green); border-color: var(--green); }
+.check-label { font-size: 13px; color: var(--text); }
+.check-label.checked { color: var(--text3); text-decoration: line-through; }
+
+/* Toggle */
+.toggle { width: 36px; height: 20px; background: var(--bg4); border-radius: 10px; cursor: pointer; position: relative; transition: background 0.2s; }
+.toggle.on { background: var(--blue); }
+.toggle-thumb { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: white; transition: transform 0.2s; }
+.toggle.on .toggle-thumb { transform: translateX(16px); }
+
+/* QR scan modal */
+.qr-modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.qr-modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; width: 420px; overflow: hidden; }
+.qr-modal-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.qr-viewfinder { width: 240px; height: 240px; border-radius: 12px; background: #0b1422; position: relative; margin: 24px auto; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.qr-corner { position: absolute; width: 24px; height: 24px; border-color: var(--blue); border-style: solid; }
+.qr-corner.tl { top: 10px; left: 10px; border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
+.qr-corner.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; }
+.qr-corner.bl { bottom: 10px; left: 10px; border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; }
+.qr-corner.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
+.qr-scan-line { position: absolute; left: 20px; right: 20px; height: 1.5px; background: linear-gradient(90deg, transparent, var(--blue), transparent); animation: scan 2s ease-in-out infinite; }
+@keyframes scan { 0%,100% { top: 20px; opacity: 0.4; } 50% { top: 210px; opacity: 1; } }
+
+/* Lifecycle timeline */
+.lifecycle-node { display: flex; gap: 14px; padding-bottom: 20px; position: relative; }
+.lifecycle-node::before { content: ''; position: absolute; left: 15px; top: 32px; bottom: 0; width: 1px; background: var(--border); }
+.lifecycle-node:last-child::before { display: none; }
+.lifecycle-icon { width: 32px; height: 32px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; z-index: 1; background: var(--bg2); }
+.lifecycle-content { flex: 1; padding-top: 4px; }
+.lifecycle-date { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.lifecycle-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 2px 0; }
+.lifecycle-detail { font-size: 11px; color: var(--text2); line-height: 1.5; }
+.lifecycle-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; font-family: var(--mono); margin-top: 5px; }
+
+/* QR identity card */
+.identity-card { background: linear-gradient(135deg, var(--bg3), var(--bg4)); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; gap: 16px; align-items: flex-start; margin-bottom: 16px; }
+.qr-code-box { width: 72px; height: 72px; background: white; border-radius: 6px; padding: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="auth-gate" style="position:fixed;inset:0;background:#0b1422;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;"><svg width="28" height="28" viewBox="0 0 28 28" style="animation:ag-spin 0.9s linear infinite"><circle cx="14" cy="14" r="11" stroke="rgba(107,196,214,0.15)" stroke-width="3" fill="none"/><path d="M14 3 A11 11 0 0 1 25 14" stroke="#6BC4D6" stroke-width="3" stroke-linecap="round" fill="none"/></svg><div style="color:rgba(238,242,247,0.35);font-size:13px;font-family:Outfit,sans-serif;font-weight:500;letter-spacing:0.02em">Checking session…</div><style>@keyframes ag-spin{to{transform:rotate(360deg)}}</style></div>
+<script>
+(async function(){
+  if(!window.YV_AUTH){document.getElementById('auth-gate').style.display='none';return;}
+  const u=await YV_AUTH.requireRole('admin','installer');
+  if(u){document.getElementById('auth-gate').style.display='none';const _ld=window.YV?.loadFromSupabase||window.YV_loadFromSupabase;if(_ld)_ld();}
+})();
+</script>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+// Get pump from URL param or default to P005
+const params = new URLSearchParams(window.location.search);
+const initPumpId = params.get('pump') || 'P005';
+
+const statusColor = YV.statusColor;
+const statusLabel = YV.statusLabel;
+
+// Generate live temperature data
+function genTempData(baseTemp, variance, count = 48) {
+  const pts = [];
+  let v = baseTemp;
+  for (let i = 0; i < count; i++) {
+    v += (Math.random() - 0.5) * variance;
+    v = Math.max(baseTemp - variance * 3, Math.min(baseTemp + variance * 3, v));
+    pts.push(parseFloat(v.toFixed(1)));
+  }
+  return pts;
+}
+
+// Mini live chart component
+const LiveChart = ({ pump }) => {
+  const W = 600, H = 120;
+  const indoorData = useMemo(() => genTempData(pump.temp_indoor, 0.4), [pump.id]);
+  const outdoorData = useMemo(() => genTempData(pump.temp_outdoor, 1.2), [pump.id]);
+  const copData = useMemo(() => genTempData(pump.cop, 0.3), [pump.id]);
+
+  const toPath = (data, min, max) => {
+    const pad = 10;
+    return data.map((v, i) => {
+      const x = pad + (i / (data.length - 1)) * (W - pad * 2);
+      const y = pad + (1 - (v - min) / (max - min)) * (H - pad * 2);
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    }).join(' ');
+  };
+
+  const times = ['00:00','04:00','08:00','12:00','16:00','20:00','24:00'];
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
+        {[['Indoor', pump.temp_indoor + '°C', '#6BC4D6'], ['Outdoor', pump.temp_outdoor + '°C', '#7f9ab5'], ['COP', pump.cop > 0 ? pump.cop.toFixed(1) : 'N/A', '#79D89F']].map(([l, v, c]) => (
+          <div key={l} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 20, height: 2, background: c, borderRadius: 1 }}></div>
+            <span style={{ fontSize: 11, color: '#7f9ab5' }}>{l}</span>
+            <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', fontWeight: 600, color: c }}>{v}</span>
+          </div>
+        ))}
+      </div>
+      <svg className="graph-svg" viewBox={`0 0 ${W} ${H}`} style={{ height: 110 }}>
+        {[0,1,2,3,4].map(i => (
+          <line key={i} className="grid-line" x1="10" y1={10 + i * 25} x2={W-10} y2={10 + i * 25}/>
+        ))}
+        {times.map((t, i) => (
+          <text key={t} className="graph-label" x={10 + (i / (times.length - 1)) * (W - 20)} y={H - 1} textAnchor="middle">{t}</text>
+        ))}
+        <path d={toPath(indoorData, 10, 30)} fill="none" stroke="#6BC4D6" strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d={toPath(outdoorData, -5, 20)} fill="none" stroke="#4a6480" strokeWidth="1" strokeLinejoin="round" strokeDasharray="3,2"/>
+        <path d={toPath(copData, 0, 5)} fill="none" stroke="#79D89F" strokeWidth="1.5" strokeLinejoin="round" strokeDasharray="4,2"/>
+      </svg>
+    </div>
+  );
+};
+
+// Checklist component
+const Checklist = () => {
+  const items = [
+    'Check refrigerant pressure (±5% of nominal)',
+    'Inspect compressor for vibration/noise',
+    'Clean air filter and heat exchanger',
+    'Verify defrost cycle operation',
+    'Test hot water temperature setpoint',
+    'Check all electrical connections',
+    'Log energy meter reading',
+    'Test remote connectivity (MyUplink)',
+    'Check expansion valve operation',
+    'Document final COP measurement',
+  ];
+  const [checked, setChecked] = useState(new Set([0, 1, 2]));
+  return (
+    <div>
+      {items.map((item, i) => (
+        <div key={i} className="check-item" onClick={() => {
+          const s = new Set(checked);
+          s.has(i) ? s.delete(i) : s.add(i);
+          setChecked(s);
+        }}>
+          <div className={`check-box ${checked.has(i) ? 'checked' : ''}`}>
+            {checked.has(i) && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+          </div>
+          <span className={`check-label ${checked.has(i) ? 'checked' : ''}`}>{item}</span>
+        </div>
+      ))}
+      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: '#7f9ab5' }}>{checked.size}/{items.length} complete</span>
+        <button className="btn btn-primary">Save Checklist</button>
+      </div>
+    </div>
+  );
+};
+
+// Settings tab
+const SettingsTab = ({ pump }) => {
+  const [heatingSetpoint, setHeatingSetpoint] = useState(21);
+  const [hwSetpoint, setHwSetpoint] = useState(55);
+  const [mode, setMode] = useState('comfort');
+  const [remoteDiag, setRemoteDiag] = useState(true);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div className="card">
+        <div className="card-header"><span className="card-title">Remote Settings (via MyUplink)</span>
+          <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: '#79D89F' }}>● Connected</span>
+        </div>
+        <div className="card-body">
+          <div className="setting-row">
+            <div><div className="setting-label">Heating Setpoint</div><div className="setting-sublabel">Room temperature target</div></div>
+            <div className="slider-wrap">
+              <input type="range" min="16" max="26" step="0.5" value={heatingSetpoint} onChange={e => setHeatingSetpoint(Number(e.target.value))}/>
+              <div className="slider-val">{heatingSetpoint}°C</div>
+            </div>
+          </div>
+          <div className="setting-row">
+            <div><div className="setting-label">Hot Water Setpoint</div><div className="setting-sublabel">Tank temperature target</div></div>
+            <div className="slider-wrap">
+              <input type="range" min="45" max="70" step="1" value={hwSetpoint} onChange={e => setHwSetpoint(Number(e.target.value))}/>
+              <div className="slider-val">{hwSetpoint}°C</div>
+            </div>
+          </div>
+          <div className="setting-row">
+            <div><div className="setting-label">Operating Mode</div></div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['comfort','eco','holiday'].map(m => (
+                <button key={m} className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: 11, background: mode === m ? '#6BC4D6' : undefined, color: mode === m ? 'white' : undefined, borderColor: mode === m ? '#6BC4D6' : undefined }} onClick={() => setMode(m)}>
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="setting-row">
+            <div><div className="setting-label">Remote Diagnostics</div><div className="setting-sublabel">Allow MyUplink telemetry</div></div>
+            <div className={`toggle ${remoteDiag ? 'on' : ''}`} onClick={() => setRemoteDiag(!remoteDiag)}>
+              <div className="toggle-thumb"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-header"><span className="card-title">Push Changes</span></div>
+        <div className="card-body" style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-primary">Apply to {pump.id}</button>
+          <button className="btn btn-ghost">Apply to All CTC EcoHeat 400</button>
+          <button className="btn btn-danger" style={{ marginLeft: 'auto' }}>Factory Reset</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Work Order helpers ───────────────────────────────────────────────────────
+function sortOrders(list) {
+  const pri = { high: 0, medium: 1, low: 2 };
+  const sta = { open: 0, in_progress: 1, scheduled: 2, completed: 3 };
+  return [...list].sort((a, b) =>
+    (sta[a.status] ?? 9) - (sta[b.status] ?? 9) ||
+    (pri[a.priority] ?? 9) - (pri[b.priority] ?? 9)
+  );
+}
+
+// ─── Work Orders Tab ─────────────────────────────────────────────────────────
+const iStyle = { width:'100%', background:'var(--bg3)', border:'1px solid var(--border)',
+  borderRadius:6, padding:'7px 10px', color:'var(--text)', fontSize:12,
+  fontFamily:'var(--sans)', outline:'none', boxSizing:'border-box' };
+const lStyle = { fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', marginBottom:4 };
+
+const WO_TYPES     = ['Emergency','Maintenance','Annual Service','Installation','Inspection'];
+const WO_PRIORITY  = ['high','medium','low'];
+const WO_STATUSES  = ['open','in_progress','scheduled','completed'];
+const INSTALLERS   = window.YV_USERS
+  ? YV_USERS.installers.map(i => i.name)
+  : ['Pauli Rasmussen','Súni Jacobsen'];
+
+const statusColour = { open:'#F08A8A', in_progress:'#F5C66B', scheduled:'#6BC4D6', completed:'#79D89F' };
+const priorityColour = { high:'#F08A8A', medium:'#F5C66B', low:'#4a6480' };
+
+const WorkOrdersTab = () => {
+  const [orders,   setOrders]   = useState([]);
+  const [loading,  setLoading]  = useState(true);
+  const [showNew,  setShowNew]  = useState(false);
+  const [filter,   setFilter]   = useState('all');
+  const [expandId, setExpandId] = useState(null);
+  const [saving,   setSaving]   = useState(false);
+  const [flash,    setFlash]    = useState('');
+  const today = new Date().toISOString().slice(0, 10);
+
+  const emptyForm = {
+    type: WO_TYPES[0], priority: 'high', assigned: INSTALLERS[0],
+    due: today, customer: '', pump_id: '', description: '', notes: '',
+  };
+  const [form, setForm] = useState(emptyForm);
+  const f = k => e => setForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  function showFlash(msg) { setFlash(msg); setTimeout(() => setFlash(''), 2800); }
+
+  async function loadOrders() {
+    setLoading(true);
+    if (!window.YV_SB) { setLoading(false); return; }
+    const { data, error } = await YV_SB
+      .from('work_orders').select('*').order('created_at', { ascending: false });
+    if (!error && data) setOrders(sortOrders(data));
+    else if (error) console.error('[YV] Work orders load error:', error.message);
+    setLoading(false);
+  }
+
+  useEffect(() => { loadOrders(); }, []);
+
+  async function handleCreate() {
+    if (!form.description.trim()) return;
+    setSaving(true);
+    const id = 'WO-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(Math.random()*900+100);
+    const { error } = await YV_SB.from('work_orders').insert({
+      id, type: form.type, priority: form.priority, status: 'open',
+      assigned: form.assigned, due: form.due || null,
+      customer: form.customer || null,
+      pump_id:  form.pump_id  || null,
+      description: form.description,
+      notes: form.notes || null,
+    });
+    if (error) { showFlash('❌ ' + error.message); }
+    else {
+      await loadOrders();
+      setShowNew(false); setForm(emptyForm); setExpandId(id);
+      showFlash('✓ Work order created');
+    }
+    setSaving(false);
+  }
+
+  async function handleStatus(wo, next) {
+    const { error } = await YV_SB.from('work_orders').update({ status: next }).eq('id', wo.id);
+    if (!error) setOrders(prev => sortOrders(prev.map(o => o.id === wo.id ? { ...o, status: next } : o)));
+    else showFlash('❌ ' + error.message);
+  }
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this work order? This cannot be undone.')) return;
+    const { error } = await YV_SB.from('work_orders').delete().eq('id', id);
+    if (!error) { setOrders(prev => prev.filter(o => o.id !== id)); showFlash('✓ Deleted'); }
+    else showFlash('❌ ' + error.message);
+  }
+
+  const visible = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+      {flash && (
+        <div style={{ padding:'8px 14px', borderRadius:8, fontSize:12, fontFamily:'var(--mono)',
+          background: flash.startsWith('❌') ? 'rgba(192,57,43,0.1)' : 'rgba(30,158,94,0.1)',
+          border: `1px solid ${flash.startsWith('❌') ? 'rgba(192,57,43,0.3)' : 'rgba(30,158,94,0.3)'}`,
+          color: flash.startsWith('❌') ? '#e07065' : '#79D89F' }}>
+          {flash}
+        </div>
+      )}
+
+      {/* Toolbar */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:8 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {['all','open','in_progress','scheduled','completed'].map(s => (
+            <button key={s} onClick={() => setFilter(s)}
+              style={{ padding:'4px 10px', borderRadius:5, border:'1px solid var(--border)', fontSize:11,
+                fontFamily:'var(--mono)', cursor:'pointer', background: filter===s ? 'var(--blue)' : 'var(--bg3)',
+                color: filter===s ? '#fff' : 'var(--text2)' }}>
+              {s.replace('_',' ')}
+              {s !== 'all' && <span style={{ marginLeft:4, opacity:0.7 }}>
+                {orders.filter(o => o.status === s).length}
+              </span>}
+            </button>
+          ))}
+        </div>
+        <button className="btn btn-primary" onClick={() => { setShowNew(s => !s); setForm(emptyForm); }}>
+          {showNew ? 'Cancel' : '+ New Work Order'}
+        </button>
+      </div>
+
+      {/* New WO form */}
+      {showNew && (
+        <div className="card anim-in">
+          <div className="card-header"><span className="card-title">New Work Order</span></div>
+          <div className="card-body" style={{ display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+
+              <div><div style={lStyle}>Type</div>
+                <select value={form.type} onChange={f('type')} style={iStyle}>
+                  {WO_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select></div>
+
+              <div><div style={lStyle}>Priority</div>
+                <select value={form.priority} onChange={f('priority')} style={iStyle}>
+                  {WO_PRIORITY.map(p => <option key={p}>{p}</option>)}
+                </select></div>
+
+              <div><div style={lStyle}>Assigned to</div>
+                <select value={form.assigned} onChange={f('assigned')} style={iStyle}>
+                  {INSTALLERS.map(i => <option key={i}>{i}</option>)}
+                </select></div>
+
+              <div><div style={lStyle}>Due date</div>
+                <input type="date" value={form.due} onChange={f('due')} style={iStyle}/></div>
+
+              <div><div style={lStyle}>Customer name</div>
+                <input placeholder="e.g. Jón Petersen" value={form.customer} onChange={f('customer')} style={iStyle}/></div>
+
+              <div><div style={lStyle}>Pump ID</div>
+                <select value={form.pump_id} onChange={f('pump_id')} style={iStyle}>
+                  <option value="">— select pump —</option>
+                  {YV.pumps.map(p => <option key={p.id} value={p.id}>{p.id} · {p.customer}</option>)}
+                </select></div>
+            </div>
+
+            <div><div style={lStyle}>Description *</div>
+              <textarea rows={2} value={form.description} onChange={f('description')}
+                placeholder="Describe the issue or work required…"
+                style={{ ...iStyle, resize:'none' }}/></div>
+
+            <div><div style={lStyle}>Additional notes</div>
+              <textarea rows={2} value={form.notes} onChange={f('notes')}
+                placeholder="Parts needed, access info, customer contact…"
+                style={{ ...iStyle, resize:'none' }}/></div>
+
+            <div style={{ display:'flex', gap:8 }}>
+              <button className="btn btn-primary" onClick={handleCreate}
+                disabled={!form.description.trim() || saving} style={{ opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Creating…' : 'Create Work Order'}
+              </button>
+              <button className="btn btn-ghost" onClick={() => setShowNew(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Orders list */}
+      <div className="card" style={{ padding:0, overflow:'hidden' }}>
+        {loading && (
+          <div style={{ padding:24, textAlign:'center', color:'var(--text3)', fontSize:13 }}>
+            Loading work orders…
+          </div>
+        )}
+        {!loading && visible.length === 0 && (
+          <div style={{ padding:24, textAlign:'center', color:'var(--text3)', fontSize:13 }}>
+            No work orders{filter !== 'all' ? ` with status "${filter.replace('_',' ')}"` : ''}.
+          </div>
+        )}
+        {!loading && visible.map((wo, i) => {
+          const expanded = expandId === wo.id;
+          return (
+            <div key={wo.id} style={{ borderBottom: i < visible.length-1 ? '1px solid var(--border)' : 'none' }}>
+              {/* Row */}
+              <div className="wo-row" onClick={() => setExpandId(expanded ? null : wo.id)}
+                style={{ cursor:'pointer', userSelect:'none' }}>
+                <div className="wo-priority" style={{ background: priorityColour[wo.priority] || '#4a6480' }}/>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div className="wo-type">{wo.id} · {wo.type}</div>
+                  <div className="wo-title">{wo.description}</div>
+                  <div className="wo-meta">
+                    {wo.assigned} · Due {wo.due}
+                    {wo.customer ? ` · ${wo.customer}` : ''}
+                    {wo.pump_id ? ` · ${wo.pump_id}` : ''}
+                  </div>
+                </div>
+                <span style={{ fontSize:10, fontFamily:'var(--mono)', fontWeight:600, padding:'3px 8px',
+                  borderRadius:4, background: statusColour[wo.status]+'22',
+                  color: statusColour[wo.status], whiteSpace:'nowrap' }}>
+                  {wo.status.replace('_',' ')}
+                </span>
+              </div>
+
+              {/* Expanded detail */}
+              {expanded && (
+                <div style={{ padding:'12px 16px 14px', background:'var(--bg)', borderTop:'1px solid var(--border)' }}
+                  className="anim-in">
+                  {wo.notes && (
+                    <div style={{ fontSize:12, color:'var(--text2)', marginBottom:10, lineHeight:1.5 }}>
+                      <span style={{ fontFamily:'var(--mono)', fontSize:10, color:'var(--text3)', marginRight:6 }}>NOTES</span>
+                      {wo.notes}
+                    </div>
+                  )}
+                  <div style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)', marginBottom:10 }}>
+                    Created: {wo.created_at ? new Date(wo.created_at).toLocaleString('en-GB', { dateStyle:'short', timeStyle:'short' }) : '—'}
+                  </div>
+                  <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)',
+                      padding:'3px 0', marginRight:4, alignSelf:'center' }}>Move to →</span>
+                    {WO_STATUSES.filter(s => s !== wo.status).map(s => (
+                      <button key={s} onClick={e => { e.stopPropagation(); handleStatus(wo, s); }}
+                        style={{ padding:'4px 10px', borderRadius:5, border:`1px solid ${statusColour[s]}44`,
+                          background: statusColour[s]+'18', color: statusColour[s],
+                          fontSize:11, fontFamily:'var(--mono)', cursor:'pointer' }}>
+                        {s.replace('_',' ')}
+                      </button>
+                    ))}
+                    <button onClick={e => { e.stopPropagation(); handleDelete(wo.id); }}
+                      style={{ marginLeft:'auto', padding:'4px 10px', borderRadius:5,
+                        border:'1px solid rgba(192,57,43,0.3)', background:'rgba(192,57,43,0.08)',
+                        color:'var(--red)', fontSize:11, fontFamily:'var(--mono)', cursor:'pointer' }}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── SERVICE REPORT MODULE ───────────────────────────────────────────────────
+
+const CHECKLIST_TEMPLATE = [
+  { id: 'c1',  section: 'Visual Inspection',   label: 'Check unit for physical damage or corrosion' },
+  { id: 'c2',  section: 'Visual Inspection',   label: 'Inspect all pipe connections for leaks' },
+  { id: 'c3',  section: 'Visual Inspection',   label: 'Verify all safety labels are legible' },
+  { id: 'c4',  section: 'Refrigerant Circuit', label: 'Check refrigerant pressure (high/low side)' },
+  { id: 'c5',  section: 'Refrigerant Circuit', label: 'Inspect compressor for vibration and noise' },
+  { id: 'c6',  section: 'Refrigerant Circuit', label: 'Verify expansion valve operation' },
+  { id: 'c7',  section: 'Air & Filters',       label: 'Clean or replace air filter' },
+  { id: 'c8',  section: 'Air & Filters',       label: 'Clean heat exchanger coils' },
+  { id: 'c9',  section: 'Air & Filters',       label: 'Check fan blades and motor' },
+  { id: 'c10', section: 'Hydraulics',          label: 'Check circulation pump operation' },
+  { id: 'c11', section: 'Hydraulics',          label: 'Top up system water pressure if needed' },
+  { id: 'c12', section: 'Hydraulics',          label: 'Verify mixing valve and buffer tank temps' },
+  { id: 'c13', section: 'Controls & Electrics',label: 'Check all electrical connections and terminals' },
+  { id: 'c14', section: 'Controls & Electrics',label: 'Test defrost cycle operation' },
+  { id: 'c15', section: 'Controls & Electrics',label: 'Verify MyUplink connectivity and alarms' },
+  { id: 'c16', section: 'Performance',         label: 'Record flow temperature' },
+  { id: 'c17', section: 'Performance',         label: 'Record return temperature' },
+  { id: 'c18', section: 'Performance',         label: 'Measure and log COP' },
+  { id: 'c19', section: 'Performance',         label: 'Read and log energy meter (kWh)' },
+  { id: 'c20', section: 'Handover',            label: 'Brief customer on any findings' },
+  { id: 'c21', section: 'Handover',            label: 'Confirm next service date' },
+  { id: 'c22', section: 'Handover',            label: 'Sign off and stamp service record' },
+];
+
+const MATERIALS_CATALOG = [
+  { id: 'm1', name: 'Air filter — CTC standard',     unit: 'pcs', price: 185 },
+  { id: 'm2', name: 'Refrigerant R410A (per kg)',     unit: 'kg',  price: 420 },
+  { id: 'm3', name: 'Expansion vessel 8L',            unit: 'pcs', price: 890 },
+  { id: 'm4', name: 'Circulation pump gasket set',    unit: 'set', price: 245 },
+  { id: 'm5', name: 'Compressor overload relay',      unit: 'pcs', price: 1340 },
+  { id: 'm6', name: 'Pressure gauge set',             unit: 'set', price: 560 },
+  { id: 'm7', name: 'Pipe insulation tape (5m)',      unit: 'roll',price: 95 },
+  { id: 'm8', name: 'System flush chemical',          unit: 'L',   price: 320 },
+];
+
+const HOUR_RATES = [
+  { id: 'h1', label: 'Standard (daytime)',    rate: 680 },
+  { id: 'h2', label: 'Emergency (out-of-hrs)',rate: 1020 },
+  { id: 'h3', label: 'Travel time',           rate: 340 },
+];
+
+// Photo placeholder component
+const PhotoSlot = ({ label, onAdd }) => (
+  <div onClick={onAdd} style={{ background: '#1a2d42', border: '1.5px dashed #2a3f58', borderRadius: 10, aspectRatio: '4/3', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 6, transition: 'border-color 0.15s' }}
+    onMouseEnter={e => e.currentTarget.style.borderColor = '#6BC4D6'}
+    onMouseLeave={e => e.currentTarget.style.borderColor = '#2a3f58'}>
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="13" rx="2" stroke="#4a6480" strokeWidth="1.4"/><circle cx="11" cy="11.5" r="3" stroke="#4a6480" strokeWidth="1.4"/><path d="M7 5l1.5-2h5L15 5" stroke="#4a6480" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+    <span style={{ fontSize: 10, color: '#4a6480', fontFamily: 'JetBrains Mono' }}>{label}</span>
+  </div>
+);
+
+// Service Report Tab
+const ServiceReportTab = ({ pump }) => {
+  const [reportType, setReportType] = useState('annual'); // annual | repair | install | inspection
+  const [description, setDescription] = useState('');
+  const [findings, setFindings] = useState('');
+  const [checked, setChecked] = useState(new Set());
+  const [checkNotes, setCheckNotes] = useState({});
+  const [hours, setHours] = useState([{ rateId: 'h1', qty: 2.0 }]);
+  const [materials, setMaterials] = useState([]);
+  const [photos, setPhotos] = useState([null, null, null, null]);
+  const [techName] = useState('Pauli Rasmussen');
+  const [submitted, setSubmitted] = useState(false);
+  const [activeSection, setActiveSection] = useState('checklist'); // checklist | hours | photos | summary
+
+  const today = new Date().toISOString().split('T')[0];
+
+  const sections = [...new Set(CHECKLIST_TEMPLATE.map(i => i.section))];
+
+  const toggleCheck = (id) => {
+    const s = new Set(checked);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setChecked(s);
+  };
+
+  const totalHours = hours.reduce((s, h) => s + (h.qty || 0), 0);
+  const hoursCost = hours.reduce((s, h) => {
+    const rate = HOUR_RATES.find(r => r.id === h.rateId);
+    return s + (rate ? rate.rate * h.qty : 0);
+  }, 0);
+  const materialsCost = materials.reduce((s, m) => {
+    const item = MATERIALS_CATALOG.find(c => c.id === m.itemId);
+    return s + (item ? item.price * m.qty : 0);
+  }, 0);
+  const totalCost = hoursCost + materialsCost;
+
+  const completedChecks = checked.size;
+  const totalChecks = CHECKLIST_TEMPLATE.length;
+
+  // ── Export helpers ────────────────────────────────────────────
+  const buildReportData = () => ({
+    meta: {
+      reportId:    `SR-${pump.id}-${today.replace(/-/g,'')}`,
+      reportType,
+      date:        today,
+      technician:  techName,
+      company:     'Maria Poulsen Rør',
+    },
+    pump: {
+      id:      pump.id,
+      serial:  pump.serial || pump.id,
+      model:   pump.model,
+      address: pump.address,
+      customer:pump.customer,
+    },
+    work: { description, findings },
+    checklist: CHECKLIST_TEMPLATE.map(item => ({
+      id: item.id, section: item.section, label: item.label,
+      done: checked.has(item.id),
+      note: checkNotes[item.id] || '',
+    })),
+    hours: hours.map(h => {
+      const rate = HOUR_RATES.find(r => r.id === h.rateId) || {};
+      return { rateId: h.rateId, description: rate.label || h.rateId, qty: h.qty, unitCost: rate.rate || 0, amount: (rate.rate || 0) * h.qty };
+    }),
+    materials: materials.map(m => {
+      const item = MATERIALS_CATALOG.find(c => c.id === m.itemId) || {};
+      return { itemId: m.itemId, description: item.name || m.itemId, qty: m.qty, unitCost: item.price || 0, amount: (item.price || 0) * m.qty };
+    }),
+    totals: { hoursCost, materialsCost, total: totalCost },
+  });
+
+  const [emailStatus, setEmailStatus] = useState(''); // '', 'sending', 'sent', 'error'
+
+  const buildBody = (d) => {
+    const matLines = d.materials.length
+      ? d.materials.map(m => `  - ${m.description} x${m.qty}  DKK ${m.amount.toLocaleString()}`).join('\n')
+      : '  (none)';
+    const hrLines = d.hours.map(h => `  - ${h.description}: ${h.qty}h  DKK ${h.amount.toLocaleString()}`).join('\n');
+    return [
+      `SERVICE REPORT — ${d.meta.reportId}`,
+      `${'─'.repeat(40)}`,
+      `Type:        ${d.meta.reportType.charAt(0).toUpperCase() + d.meta.reportType.slice(1)} Service`,
+      `Date:        ${d.meta.date}`,
+      `Technician:  ${d.meta.technician}`,
+      ``, `PUMP`,
+      `  ${d.pump.id} · ${d.pump.model}`,
+      `  ${d.pump.address}`,
+      `  Customer: ${d.pump.customer}`,
+      ``, `WORK DESCRIPTION`,
+      `  ${d.work.description || '(none)'}`,
+      ``, `FINDINGS`,
+      `  ${d.work.findings || '(none)'}`,
+      ``, `CHECKLIST: ${d.checklist.filter(c=>c.done).length}/${d.checklist.length} items completed`,
+      ``, `HOURS`, hrLines,
+      ``, `MATERIALS`, matLines,
+      ``, `${'─'.repeat(40)}`,
+      `TOTAL:  DKK ${d.totals.total.toLocaleString()}`,
+      ``, `Maria Poulsen Rør  ·  Tlf: 31 20 00  ·  mp@mp.fo`,
+    ].join('\n');
+  };
+
+  const sendEmail = async () => {
+    const d = buildReportData();
+    const body = buildBody(d);
+    const cfg = window.YVIRVAKING_CONFIG?.emailjs || {};
+
+    if (cfg.publicKey && cfg.serviceId && cfg.templateId) {
+      setEmailStatus('sending');
+      try {
+        emailjs.init({ publicKey: cfg.publicKey });
+        await emailjs.send(cfg.serviceId, cfg.templateId, {
+          to_email:    cfg.toEmail || 'maria@yvirvaking.fo',
+          report_id:   d.meta.reportId,
+          customer:    d.pump.customer,
+          pump_model:  d.pump.model,
+          address:     d.pump.address,
+          tech_name:   d.meta.technician,
+          report_type: d.meta.reportType,
+          report_date: d.meta.date,
+          total_dkk:   d.totals.total.toLocaleString(),
+          report_body: body,
+        });
+        setEmailStatus('sent');
+        setTimeout(() => setEmailStatus(''), 4000);
+      } catch (err) {
+        console.error('EmailJS error:', err);
+        setEmailStatus('error');
+        setTimeout(() => setEmailStatus(''), 4000);
+      }
+    } else {
+      // Fallback — open mail client
+      const subject = encodeURIComponent(`Service Report ${d.meta.reportId} — ${d.pump.customer}`);
+      window.location.href = `mailto:${cfg.toEmail||''}?subject=${subject}&body=${encodeURIComponent(body)}`;
+    }
+  };
+
+  const exportBCJson = () => {
+    const d = buildReportData();
+    // Business Central service order JSON structure
+    const bc = {
+      serviceOrder: {
+        externalDocumentNo: d.meta.reportId,
+        orderDate:          d.meta.date,
+        description:        `${d.meta.reportType} service — ${d.pump.model} @ ${d.pump.address}`,
+        customerRef:        d.pump.customer,
+        yourReference:      d.meta.technician,
+        serialNo:           d.pump.serial,
+        serviceLines: [
+          ...d.hours.map((h, i) => ({
+            lineNo:      (i + 1) * 10000,
+            type:        'Resource',
+            no:          h.rateId,
+            description: h.description,
+            quantity:    h.qty,
+            unitCost:    h.unitCost,
+            lineAmount:  h.amount,
+          })),
+          ...d.materials.map((m, i) => ({
+            lineNo:      (d.hours.length + i + 1) * 10000,
+            type:        'Item',
+            no:          m.itemId,
+            description: m.description,
+            quantity:    m.qty,
+            unitCost:    m.unitCost,
+            lineAmount:  m.amount,
+          })),
+        ],
+        totalAmount: d.totals.total,
+      },
+      _meta: { generator: 'Yvirvaking', version: '1.0', exportedAt: new Date().toISOString() },
+    };
+    const blob = new Blob([JSON.stringify(bc, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${d.meta.reportId}-BC.json`;
+    a.click();
+  };
+
+  const printReport = () => {
+    const d = buildReportData();
+    const win = window.open('', '_blank');
+    const matRows = d.materials.map(m =>
+      `<tr><td>${m.description}</td><td>${m.qty}</td><td>DKK ${m.unitCost.toLocaleString()}</td><td>DKK ${m.amount.toLocaleString()}</td></tr>`).join('');
+    const hrRows = d.hours.map(h =>
+      `<tr><td>${h.description}</td><td>${h.qty}h</td><td>DKK ${h.unitCost.toLocaleString()}/h</td><td>DKK ${h.amount.toLocaleString()}</td></tr>`).join('');
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${d.meta.reportId}</title>
+    <style>
+      body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:32px}
+      h1{font-size:18px;margin-bottom:4px}
+      .sub{color:#666;font-size:11px;margin-bottom:20px}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px}
+      th{text-align:left;border-bottom:2px solid #F08A8A;padding:4px 8px;font-size:11px;text-transform:uppercase;color:#F08A8A}
+      td{padding:4px 8px;border-bottom:1px solid #eee}
+      .total{text-align:right;font-weight:700;font-size:14px;margin-top:8px}
+      .stamp{border:2px solid #F08A8A;padding:12px 16px;border-radius:8px;max-width:320px;margin-top:24px}
+      .stamp h3{margin:0 0 6px;font-size:13px;color:#F08A8A}
+      @media print{body{margin:16px}}
+    </style></head><body>
+    <h1>Service Report — ${d.meta.reportId}</h1>
+    <div class="sub">${d.pump.id} · ${d.pump.model} · ${d.pump.address} · ${d.pump.customer}</div>
+    <table><tr><th>Field</th><th>Value</th></tr>
+      <tr><td>Report type</td><td>${d.meta.reportType}</td></tr>
+      <tr><td>Date</td><td>${d.meta.date}</td></tr>
+      <tr><td>Technician</td><td>${d.meta.technician}</td></tr>
+      <tr><td>Checklist</td><td>${d.checklist.filter(c=>c.done).length} / ${d.checklist.length} items</td></tr>
+    </table>
+    <table><tr><th colspan="4">Work Description</th></tr><tr><td colspan="4">${d.work.description || '—'}</td></tr></table>
+    <table><tr><th>Hours</th><th>Qty</th><th>Rate</th><th>Amount</th></tr>${hrRows}</table>
+    <table><tr><th>Materials</th><th>Qty</th><th>Unit</th><th>Amount</th></tr>${matRows}</table>
+    <div class="total">Total: DKK ${d.totals.total.toLocaleString()}</div>
+    <div class="stamp"><h3>Maria Poulsen Rør</h3>Tlf: 31 20 00 · mp@mp.fo<br/>CTC Certified Installer</div>
+    </body></html>`);
+    win.document.close();
+    win.print();
+  };
+
+  if (submitted) {
+    return (
+      <div className="anim-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px', textAlign: 'center' }}>
+        <div style={{ width: 64, height: 64, background: 'rgba(30,158,94,0.12)', border: '2px solid rgba(30,158,94,0.4)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, marginBottom: 18 }}>✓</div>
+        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>Service Report Submitted</div>
+        <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 24, lineHeight: 1.6 }}>
+          Report stamped by <strong style={{ color: 'var(--text)' }}>{techName}</strong> on {today}.<br/>
+          Added to pump {pump.id} lifecycle history.
+        </div>
+        <div style={{ border: '2px solid var(--red)', borderRadius: 12, padding: '16px 24px', position: 'relative', marginBottom: 24, maxWidth: 320, width: '100%' }}>
+          <div style={{ position: 'absolute', top: -11, left: 16, background: 'var(--bg3)', padding: '0 8px', fontSize: 10, fontFamily: 'JetBrains Mono', color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Official Service Record</div>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Maria Poulsen Rør</div>
+          <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: 'JetBrains Mono', marginBottom: 8 }}>Tlf: 31 20 00 · mp@mp.fo</div>
+          {[
+            ['Pump',       pump.id + ' · ' + pump.model],
+            ['Address',    pump.address],
+            ['Type',       reportType.charAt(0).toUpperCase() + reportType.slice(1) + ' Service'],
+            ['Date',       today],
+            ['Technician', techName],
+            ['Checks',     completedChecks + '/' + totalChecks + ' items'],
+            ['Total',      'DKK ' + totalCost.toLocaleString()],
+          ].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+              <span style={{ fontSize: 11, color: 'var(--text3)' }}>{k}</span>
+              <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: 'var(--text)' }}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Action row */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button className="btn btn-primary" onClick={sendEmail} disabled={emailStatus==='sending'}
+            style={{ opacity: emailStatus==='sending' ? 0.6 : 1,
+              background: emailStatus==='sent' ? 'var(--green)' : emailStatus==='error' ? 'var(--red)' : '' }}>
+            {emailStatus==='sending' ? 'Sending…' : emailStatus==='sent' ? '✓ Sent' : emailStatus==='error' ? '✗ Failed — check console' : T('report.sendemail')}
+          </button>
+          <button className="btn btn-ghost" onClick={printReport}>
+            {T('report.print')}
+          </button>
+          <button className="btn btn-ghost" onClick={exportBCJson} title="Download Business Central import file">
+            {T('report.exportbc')}
+          </button>
+          <button className="btn btn-ghost" onClick={() => setSubmitted(false)}>New Report</button>
+        </div>
+        <div style={{ marginTop: 12, fontSize: 11, color: 'var(--text3)', fontFamily: 'JetBrains Mono' }}>
+          BC JSON format: service order with resource + item lines ready for Power Automate import
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="anim-in">
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <div style={{ fontSize: 15, fontWeight: 700 }}>Service Report</div>
+          <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono', marginTop: 2 }}>{pump.id} · {pump.customer} · {today}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[['annual','Annual'],['repair','Repair'],['install','Install'],['inspection','Inspection']].map(([v, l]) => (
+            <button key={v} className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px', background: reportType === v ? 'var(--blue)' : undefined, color: reportType === v ? 'white' : undefined, borderColor: reportType === v ? 'var(--blue)' : undefined }}
+              onClick={() => setReportType(v)}>{l}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{ background: '#1a2d42', borderRadius: 999, height: 4, marginBottom: 16, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${(completedChecks/totalChecks)*100}%`, background: completedChecks === totalChecks ? '#79D89F' : '#6BC4D6', borderRadius: 999, transition: 'width 0.3s ease' }}></div>
+      </div>
+
+      {/* Sub-nav */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: '#1a2d42', borderRadius: 8, padding: 3 }}>
+        {[['checklist','Checklist'],['hours','Hours & Materials'],['photos','Photos'],['summary','Summary']].map(([id, label]) => (
+          <div key={id} onClick={() => setActiveSection(id)}
+            style={{ flex: 1, textAlign: 'center', padding: '6px 8px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s',
+              background: activeSection === id ? '#132030' : 'transparent',
+              color: activeSection === id ? '#eef2f7' : '#4a6480',
+              border: activeSection === id ? '1px solid #2a3f58' : '1px solid transparent' }}>
+            {label}
+          </div>
+        ))}
+      </div>
+
+      {/* CHECKLIST */}
+      {activeSection === 'checklist' && (
+        <div className="anim-in">
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono', marginBottom: 6 }}>WORK DESCRIPTION</div>
+            <textarea value={description} onChange={e => setDescription(e.target.value)}
+              placeholder="Describe the work carried out…"
+              rows="3" style={{ width: '100%', background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 8, padding: '10px 12px', color: '#eef2f7', fontSize: 13, fontFamily: 'Outfit', outline: 'none', resize: 'none', lineHeight: 1.5 }}/>
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono', marginBottom: 6 }}>FINDINGS & RECOMMENDATIONS</div>
+            <textarea value={findings} onChange={e => setFindings(e.target.value)}
+              placeholder="Any issues found, parts replaced, recommendations for next service…"
+              rows="2" style={{ width: '100%', background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 8, padding: '10px 12px', color: '#eef2f7', fontSize: 13, fontFamily: 'Outfit', outline: 'none', resize: 'none', lineHeight: 1.5 }}/>
+          </div>
+
+          {sections.map(section => (
+            <div key={section} style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>{section}</span>
+                <div style={{ flex: 1, height: 1, background: '#2a3f58' }}></div>
+                <span style={{ color: checked.size > 0 ? '#79D89F' : '#4a6480' }}>
+                  {CHECKLIST_TEMPLATE.filter(i => i.section === section && checked.has(i.id)).length}/{CHECKLIST_TEMPLATE.filter(i => i.section === section).length}
+                </span>
+              </div>
+              <div className="card">
+                <div className="card-body" style={{ padding: '8px 14px' }}>
+                  {CHECKLIST_TEMPLATE.filter(i => i.section === section).map(item => (
+                    <div key={item.id}>
+                      <div className="check-item" onClick={() => toggleCheck(item.id)}>
+                        <div className={`check-box ${checked.has(item.id) ? 'checked' : ''}`}>
+                          {checked.has(item.id) && <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5l2.5 2.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+                        </div>
+                        <span className={`check-label ${checked.has(item.id) ? 'checked' : ''}`}>{item.label}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#4a6480', cursor: 'pointer', flexShrink: 0 }}
+                          onClick={e => { e.stopPropagation(); setCheckNotes(n => ({ ...n, [item.id]: n[item.id] === undefined ? '' : undefined })); }}>
+                          {checkNotes[item.id] !== undefined ? '▲' : '+ note'}
+                        </span>
+                      </div>
+                      {checkNotes[item.id] !== undefined && (
+                        <div style={{ paddingLeft: 28, paddingBottom: 6 }}>
+                          <input value={checkNotes[item.id]}
+                            onChange={e => setCheckNotes(n => ({ ...n, [item.id]: e.target.value }))}
+                            placeholder="Add note…"
+                            style={{ width: '100%', background: '#213550', border: '1px solid #2a3f58', borderRadius: 5, padding: '5px 8px', color: '#eef2f7', fontSize: 11, fontFamily: 'Outfit', outline: 'none' }}/>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* HOURS & MATERIALS */}
+      {activeSection === 'hours' && (
+        <div className="anim-in">
+          <div className="card" style={{ marginBottom: 14 }}>
+            <div className="card-header">
+              <span className="card-title">Labour Hours</span>
+              <button className="btn btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}
+                onClick={() => setHours(h => [...h, { rateId: 'h1', qty: 1.0 }])}>+ Add</button>
+            </div>
+            <div className="card-body">
+              {hours.map((h, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <select value={h.rateId} onChange={e => { const nh = [...hours]; nh[i] = { ...nh[i], rateId: e.target.value }; setHours(nh); }}
+                    style={{ flex: 2, background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 6, padding: '7px 10px', color: '#eef2f7', fontSize: 12, fontFamily: 'Outfit', outline: 'none' }}>
+                    {HOUR_RATES.map(r => <option key={r.id} value={r.id}>{r.label} (DKK {r.rate}/hr)</option>)}
+                  </select>
+                  <input type="number" min="0.5" max="24" step="0.5" value={h.qty}
+                    onChange={e => { const nh = [...hours]; nh[i] = { ...nh[i], qty: parseFloat(e.target.value) || 0 }; setHours(nh); }}
+                    style={{ width: 70, background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 6, padding: '7px 10px', color: '#eef2f7', fontSize: 12, fontFamily: 'JetBrains Mono', outline: 'none', textAlign: 'center' }}/>
+                  <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono', color: '#7f9ab5', minWidth: 70, textAlign: 'right' }}>
+                    DKK {((HOUR_RATES.find(r => r.id === h.rateId)?.rate || 0) * h.qty).toLocaleString()}
+                  </span>
+                  <button onClick={() => setHours(hh => hh.filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', color: '#F08A8A', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+                </div>
+              ))}
+              <div style={{ borderTop: '1px solid #2a3f58', paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 12, color: '#7f9ab5' }}>{totalHours} hours total</span>
+                <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'JetBrains Mono', color: '#eef2f7' }}>DKK {hoursCost.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="card" style={{ marginBottom: 14 }}>
+            <div className="card-header">
+              <span className="card-title">Materials Used</span>
+              <button className="btn btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}
+                onClick={() => setMaterials(m => [...m, { itemId: 'm1', qty: 1 }])}>+ Add</button>
+            </div>
+            <div className="card-body">
+              {materials.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '16px 0', fontSize: 12, color: '#4a6480' }}>No materials added yet</div>
+              )}
+              {materials.map((m, i) => (
+                <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                  <select value={m.itemId} onChange={e => { const nm = [...materials]; nm[i] = { ...nm[i], itemId: e.target.value }; setMaterials(nm); }}
+                    style={{ flex: 2, background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 6, padding: '7px 10px', color: '#eef2f7', fontSize: 12, fontFamily: 'Outfit', outline: 'none' }}>
+                    {MATERIALS_CATALOG.map(c => <option key={c.id} value={c.id}>{c.name} (DKK {c.price}/{c.unit})</option>)}
+                  </select>
+                  <input type="number" min="1" max="99" step="1" value={m.qty}
+                    onChange={e => { const nm = [...materials]; nm[i] = { ...nm[i], qty: parseInt(e.target.value) || 1 }; setMaterials(nm); }}
+                    style={{ width: 60, background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 6, padding: '7px 10px', color: '#eef2f7', fontSize: 12, fontFamily: 'JetBrains Mono', outline: 'none', textAlign: 'center' }}/>
+                  <span style={{ fontSize: 12, fontFamily: 'JetBrains Mono', color: '#7f9ab5', minWidth: 70, textAlign: 'right' }}>
+                    DKK {((MATERIALS_CATALOG.find(c => c.id === m.itemId)?.price || 0) * m.qty).toLocaleString()}
+                  </span>
+                  <button onClick={() => setMaterials(mm => mm.filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', color: '#F08A8A', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+                </div>
+              ))}
+              {materials.length > 0 && (
+                <div style={{ borderTop: '1px solid #2a3f58', paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 12, color: '#7f9ab5' }}>{materials.length} item{materials.length !== 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, fontFamily: 'JetBrains Mono', color: '#eef2f7' }}>DKK {materialsCost.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ background: '#213550', border: '1px solid #2a3f58', borderRadius: 10, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Total (excl. VAT)</span>
+            <span style={{ fontSize: 22, fontWeight: 800, fontFamily: 'JetBrains Mono', color: '#6BC4D6', letterSpacing: '-0.03em' }}>DKK {totalCost.toLocaleString()}</span>
+          </div>
+        </div>
+      )}
+
+      {/* PHOTOS */}
+      {activeSection === 'photos' && (
+        <div className="anim-in">
+          <div style={{ fontSize: 12, color: '#7f9ab5', marginBottom: 14, lineHeight: 1.5 }}>
+            Document the service with photos. These are attached to the pump's permanent service record.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
+            {['Before service', 'After service', 'Any issues found', 'Filter / components'].map((label, i) => (
+              <div key={i}>
+                <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: '#4a6480', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</div>
+                {photos[i] ? (
+                  <div style={{ background: '#1a2d42', borderRadius: 10, aspectRatio: '4/3', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden', border: '1px solid #2a3f58' }}>
+                    <div style={{ fontSize: 32 }}>📸</div>
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+                      onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+                      <button onClick={() => { const p = [...photos]; p[i] = null; setPhotos(p); }}
+                        style={{ background: '#F08A8A', border: 'none', borderRadius: 6, color: 'white', padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>Remove</button>
+                    </div>
+                  </div>
+                ) : (
+                  <PhotoSlot label="Tap to add photo" onAdd={() => { const p = [...photos]; p[i] = true; setPhotos(p); }}/>
+                )}
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: '#4a6480', textAlign: 'center', fontStyle: 'italic' }}>
+            In the production app, this will use the device camera or photo library
+          </div>
+        </div>
+      )}
+
+      {/* SUMMARY */}
+      {activeSection === 'summary' && (
+        <div className="anim-in">
+          <div className="card" style={{ marginBottom: 14 }}>
+            <div className="card-header"><span className="card-title">Report Summary</span></div>
+            <div className="card-body">
+              {[
+                ['Pump', pump.id + ' — ' + pump.model],
+                ['Customer', pump.customer],
+                ['Address', pump.address],
+                ['Report Type', reportType.charAt(0).toUpperCase() + reportType.slice(1) + ' Service'],
+                ['Date', today],
+                ['Technician', techName],
+                ['Checklist', completedChecks + ' / ' + totalChecks + ' items completed'],
+                ['Photos', photos.filter(Boolean).length + ' attached'],
+                ['Labour', 'DKK ' + hoursCost.toLocaleString() + ' (' + totalHours + ' hrs)'],
+                ['Materials', 'DKK ' + materialsCost.toLocaleString() + ' (' + materials.length + ' items)'],
+                ['Total (ex VAT)', 'DKK ' + totalCost.toLocaleString()],
+              ].map(([k, v]) => (
+                <div key={k} className="data-row">
+                  <span className="data-key">{k}</span>
+                  <span className="data-val" style={{ color: k === 'Total (ex VAT)' ? '#6BC4D6' : undefined }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {description && (
+            <div className="card" style={{ marginBottom: 14 }}>
+              <div className="card-header"><span className="card-title">Work Description</span></div>
+              <div className="card-body" style={{ fontSize: 13, color: '#7f9ab5', lineHeight: 1.6 }}>{description}</div>
+            </div>
+          )}
+
+          {findings && (
+            <div className="card" style={{ marginBottom: 14 }}>
+              <div className="card-header"><span className="card-title">Findings & Recommendations</span></div>
+              <div className="card-body" style={{ fontSize: 13, color: '#7f9ab5', lineHeight: 1.6 }}>{findings}</div>
+            </div>
+          )}
+
+          {/* Technician sign-off */}
+          <div style={{ background: '#213550', border: '1px solid #2a3f58', borderRadius: 12, padding: 16, marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Technician Sign-Off</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, background: 'rgba(33,118,174,0.15)', border: '1px solid rgba(33,118,174,0.3)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#6BC4D6' }}>
+                {techName.split(' ').map(w => w[0]).join('')}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>{techName}</div>
+                <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono', marginTop: 2 }}>Maria Poulsen Rør · Certified CTC Installer</div>
+              </div>
+              <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480' }}>{today}</div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setSubmitted(true)}>
+              Submit & Stamp Report
+            </button>
+            <button className="btn btn-ghost">Save Draft</button>
+            <button className="btn btn-ghost">Preview PDF</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Communication log
+const CommTab = () => {
+  const [msg, setMsg] = useState('');
+  const messages = [
+    { from: 'system', text: 'Fault E47 detected — compressor overload. Notification sent to customer.', time: '09:14', type: 'auto' },
+    { from: 'Pauli Rasmussen', text: 'I will visit tomorrow morning, around 08:30. Please ensure access.', time: '09:45', type: 'tech' },
+    { from: 'Súsanna Dahl', text: 'Ok, I will be home. No heating since this morning, it is very cold.', time: '10:12', type: 'customer' },
+    { from: 'system', text: 'Work order WO-2024-081 created and assigned to Pauli Rasmussen', time: '10:15', type: 'auto' },
+    { from: 'Pauli Rasmussen', text: 'Parts ordered: compressor overload relay (CTC part #4198342). ETA tomorrow.', time: '14:30', type: 'tech' },
+  ];
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="card">
+        <div className="card-header"><span className="card-title">Communication Log</span><span style={{ fontSize: 10, color: '#4a6480', fontFamily: 'JetBrains Mono' }}>All parties</span></div>
+        <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {messages.map((m, i) => (
+            <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, background: m.type === 'auto' ? '#1a2d42' : m.type === 'tech' ? 'rgba(58,134,255,0.2)' : 'rgba(34,197,94,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, color: m.type === 'auto' ? '#4a6480' : m.type === 'tech' ? '#6BC4D6' : '#79D89F', fontFamily: 'JetBrains Mono', border: '1px solid var(--border)' }}>
+                {m.type === 'auto' ? 'SYS' : m.from.split(' ').map(w => w[0]).join('')}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 3 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: m.type === 'auto' ? '#4a6480' : '#eef2f7' }}>{m.from}</span>
+                  <span style={{ fontSize: 10, color: '#4a6480', fontFamily: 'JetBrains Mono' }}>{m.time}</span>
+                </div>
+                <div style={{ fontSize: 12, color: m.type === 'auto' ? '#4a6480' : '#7f9ab5', fontStyle: m.type === 'auto' ? 'italic' : 'normal', lineHeight: 1.5 }}>{m.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '12px 14px', borderTop: '1px solid #2a3f58', display: 'flex', gap: 8 }}>
+          <input value={msg} onChange={e => setMsg(e.target.value)} placeholder="Send message to customer or team…" style={{ flex: 1, background: '#1a2d42', border: '1px solid #2a3f58', borderRadius: 6, padding: '8px 12px', color: '#eef2f7', fontSize: 12, fontFamily: 'Outfit', outline: 'none' }}/>
+          <button className="btn btn-primary">Send</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Mini QR SVG (deterministic pattern from pump id)
+const QrCode = ({ id }) => {
+  const seed = id.replace('P','') * 7;
+  const cells = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const on = ((r * 13 + c * 7 + seed) % 3 !== 0) || (r < 3 && c < 3) || (r < 3 && c > 5) || (r > 5 && c < 3);
+      if (on) cells.push(<rect key={`${r}-${c}`} x={c * 6} y={r * 6} width="5" height="5" fill="#111"/>);
+    }
+  }
+  return (
+    <svg width="60" height="60" viewBox="0 0 54 54" style={{ display: 'block' }}>
+      <rect width="54" height="54" fill="white"/>
+      {/* Finder patterns */}
+      <rect x="0" y="0" width="18" height="18" rx="2" fill="#111"/><rect x="2" y="2" width="14" height="14" rx="1" fill="white"/><rect x="4" y="4" width="10" height="10" rx="1" fill="#111"/>
+      <rect x="36" y="0" width="18" height="18" rx="2" fill="#111"/><rect x="38" y="2" width="14" height="14" rx="1" fill="white"/><rect x="40" y="4" width="10" height="10" rx="1" fill="#111"/>
+      <rect x="0" y="36" width="18" height="18" rx="2" fill="#111"/><rect x="2" y="38" width="14" height="14" rx="1" fill="white"/><rect x="4" y="40" width="10" height="10" rx="1" fill="#111"/>
+      {cells}
+    </svg>
+  );
+};
+
+// QR Scan Modal
+const QrScanModal = ({ onClose, onFound }) => {
+  const [stage, setStage] = useState('scanning'); // scanning | found | notfound
+  const [foundPump, setFoundPump] = useState(null);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      // Simulate scanning — find a random pump
+      const p = YV.pumps[Math.floor(Math.random() * YV.pumps.length)];
+      setFoundPump(p);
+      setStage('found');
+    }, 2200);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div className="qr-modal-bg" onClick={onClose}>
+      <div className="qr-modal" onClick={e => e.stopPropagation()}>
+        <div className="qr-modal-head">
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Scan Pump QR Code</div>
+            <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono', marginTop: 2 }}>Hold camera over the label on the pump</div>
+          </div>
+          <button className="btn btn-ghost" style={{ padding: '4px 10px' }} onClick={onClose}>✕</button>
+        </div>
+
+        {stage === 'scanning' && (
+          <div style={{ padding: '0 24px 24px' }}>
+            <div className="qr-viewfinder">
+              <div className="qr-corner tl"></div>
+              <div className="qr-corner tr"></div>
+              <div className="qr-corner bl"></div>
+              <div className="qr-corner br"></div>
+              <div className="qr-scan-line"></div>
+              <div style={{ fontSize: 11, color: '#4a6480', fontFamily: 'JetBrains Mono' }}>Scanning…</div>
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 12, color: '#4a6480' }}>Point at the QR label on the pump unit</div>
+          </div>
+        )}
+
+        {stage === 'found' && foundPump && (
+          <div style={{ padding: '20px 24px 24px' }}>
+            <div style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 10, padding: '12px 14px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
+              <div style={{ fontSize: 18 }}>✓</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#79D89F' }}>Pump identified</div>
+                <div style={{ fontSize: 11, color: '#7f9ab5', marginTop: 1 }}>{foundPump.id} — serial verified via MyUplink</div>
+              </div>
+            </div>
+            <div className="identity-card">
+              <div className="qr-code-box"><QrCode id={foundPump.id}/></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{foundPump.model}</div>
+                <div style={{ fontSize: 11, color: '#7f9ab5', marginBottom: 6 }}>{foundPump.id} · Serial {foundPump.id.replace('P','')}-48914</div>
+                <div style={{ fontSize: 12, color: '#4a6480' }}>{foundPump.customer}</div>
+                <div style={{ fontSize: 11, color: '#4a6480', marginTop: 1 }}>{foundPump.address}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { onFound(foundPump); onClose(); }}>Open Service View</button>
+              <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Pump Identity & Lifecycle Tab
+const LifecycleTab = ({ pump }) => {
+  const lifecycle = [
+    {
+      type: 'install', color: '#79D89F', icon: '🏗️',
+      date: pump.installed, location: pump.address,
+      title: 'Initial Installation',
+      detail: `${pump.model} installed and commissioned. MyUplink connected, all systems verified. Handed over to first owner.`,
+      owner: pump.customer, tech: 'Pauli Rasmussen',
+    },
+    {
+      type: 'service', color: '#6BC4D6', icon: '🔧',
+      date: '2022-06-15', location: pump.address,
+      title: 'Annual Service #1',
+      detail: 'Refrigerant pressure checked. Filter and heat exchanger cleaned. COP measured 3.7. All good.',
+      owner: pump.customer, tech: 'Súni Jacobsen',
+    },
+    {
+      type: 'owner', color: '#F5C66B', icon: '🏠',
+      date: '2023-02-01', location: pump.address,
+      title: 'Ownership Transfer',
+      detail: `Property at ${pump.address} changed ownership. Pump record transferred to new owner. History preserved.`,
+      owner: pump.customer, tech: 'System (automated)',
+    },
+    {
+      type: 'service', color: '#6BC4D6', icon: '🔧',
+      date: '2023-09-20', location: pump.address,
+      title: 'Annual Service #2',
+      detail: 'Full service. New owner briefed on system operation. Scheduled next service for Sept 2024.',
+      owner: pump.customer, tech: 'Pauli Rasmussen',
+    },
+    {
+      type: 'fault', color: '#F08A8A', icon: '⚠️',
+      date: pump.alerts.length > 0 ? '2024-05-04' : '—',
+      location: pump.address,
+      title: pump.alerts.length > 0 ? 'Fault Detected' : 'No Recent Faults',
+      detail: pump.alerts[0] || 'No faults recorded.',
+      owner: pump.customer, tech: 'Auto-detected via MyUplink',
+    },
+  ].filter(e => e.date !== '—' || pump.alerts.length === 0);
+
+  return (
+    <div className="anim-in">
+      {/* Identity card */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Pump Identity</div>
+        <div className="identity-card">
+          <div className="qr-code-box"><QrCode id={pump.id}/></div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 3 }}>{pump.model}</div>
+            <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', marginBottom: 8 }}>
+              UID: {pump.id}-YV-{pump.id.replace('P','')}{pump.id.replace('P','') * 317}
+            </div>
+            {[
+              ['Serial', pump.id.replace('P','') + '-48914-CTC'],
+              ['Installed', pump.installed],
+              ['Region', pump.region],
+              ['Current Owner', pump.customer],
+              ['MyUplink Device', pump.id + '-ML-9841'],
+            ].map(([k, v]) => (
+              <div key={k} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                <span style={{ fontSize: 11, color: '#4a6480' }}>{k}</span>
+                <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#7f9ab5' }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" style={{ fontSize: 11 }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 10h8M6 2v6M3 5l3-3 3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Export Pump Passport
+          </button>
+          <button className="btn btn-ghost" style={{ fontSize: 11 }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M4 6h4M4 4h4M4 8h2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round"/></svg>
+            Print QR Label
+          </button>
+          <button className="btn btn-ghost" style={{ fontSize: 11 }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 4v2l1.5 1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+            Transfer Ownership
+          </button>
+        </div>
+      </div>
+
+      {/* Lifecycle timeline */}
+      <div>
+        <div style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
+          Full Lifecycle History · {lifecycle.length} events
+        </div>
+        <div style={{ background: 'rgba(58,134,255,0.04)', border: '1px solid rgba(58,134,255,0.15)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 12, color: '#7f9ab5', lineHeight: 1.6 }}>
+          This record travels with the pump regardless of location or ownership changes. Scan the QR code on any device to access the full history.
+        </div>
+        {lifecycle.map((node, i) => (
+          <div key={i} className="lifecycle-node">
+            <div className="lifecycle-icon" style={{ borderColor: node.color, color: node.color }}>{node.icon}</div>
+            <div className="lifecycle-content">
+              <div className="lifecycle-date">{node.date} · {node.location}</div>
+              <div className="lifecycle-title">{node.title}</div>
+              <div className="lifecycle-detail">{node.detail}</div>
+              <div style={{ display: 'flex', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                <span className="lifecycle-tag" style={{ background: `${node.color}15`, color: node.color, border: `1px solid ${node.color}30` }}>
+                  {node.type.charAt(0).toUpperCase() + node.type.slice(1)}
+                </span>
+                <span className="lifecycle-tag" style={{ background: 'rgba(255,255,255,0.04)', color: '#4a6480', border: '1px solid #2a3f58' }}>
+                  {node.tech}
+                </span>
+                <span className="lifecycle-tag" style={{ background: 'rgba(255,255,255,0.04)', color: '#4a6480', border: '1px solid #2a3f58' }}>
+                  Owner: {node.owner.split(' ')[0]}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+function ThemeToggle() {
+  const [mode, setMode] = React.useState(window.Theme ? Theme.getMode() : 'system');
+  const icons = { dark: '🌙', light: '☀️', system: '⚙' };
+  const cycle = () => { Theme.cycle(); setMode(Theme.getMode()); };
+  return (
+    <button onClick={cycle} title="Toggle theme" style={{
+      display:'flex', alignItems:'center', gap:5, padding:'4px 10px',
+      borderRadius:6, border:'1px solid var(--border)', background:'transparent',
+      color:'var(--text2)', fontSize:11, fontFamily:'var(--mono)', cursor:'pointer'
+    }}>
+      <span>{icons[mode]}</span><span>{mode.charAt(0).toUpperCase()+mode.slice(1)}</span>
+    </button>
+  );
+}
+
+function useLang() {
+  const [lang, setLang] = React.useState(I18n.getLang());
+  React.useEffect(() => {
+    const h = () => setLang(I18n.getLang());
+    document.addEventListener('yv:langchange', h);
+    return () => document.removeEventListener('yv:langchange', h);
+  }, []);
+  return lang;
+}
+
+function LangToggle() {
+  const lang = useLang();
+  const cycle = () => { const l=['en','da','sv']; I18n.setLang(l[(l.indexOf(lang)+1)%l.length]); };
+  return (
+    <button onClick={cycle} title="Switch language" style={{
+      display:'flex', alignItems:'center', gap:5, padding:'4px 10px',
+      borderRadius:6, border:'1px solid var(--border)', background:'transparent',
+      color:'var(--text2)', fontSize:11, fontFamily:'var(--mono)', cursor:'pointer'
+    }}>{lang.toUpperCase()}</button>
+  );
+}
+
+// Main App
+function ServiceApp() {
+  useLang();
+  const [selectedId, setSelectedId] = useState(initPumpId);
+  const [tab, setTab] = useState('overview');
+  const [showQr, setShowQr] = useState(false);
+  const [unread, setUnread] = useState(0);
+  const pump = YV.pumps.find(p => p.id === selectedId) || YV.pumps[0];
+  const col = statusColor[pump.status];
+
+  useEffect(() => {
+    if (window.YV_NOTIFY) YV_NOTIFY.syncFromPumps(YV.pumps);
+    const refresh = () => setUnread(window.YV_NOTIFY ? YV_NOTIFY.unreadCount() : 0);
+    refresh();
+    if (window.YV_NOTIFY) return YV_NOTIFY.onNew(refresh);
+  }, []);
+
+  const tabs = ['overview', 'live data', 'work orders', 'settings', 'service log', 'service report', 'identity', 'comms'];
+  const tabLabel = { 'overview': T('tab.overview'), 'live data': T('tab.diagnostics'), 'work orders': T('nav.workorders'), 'settings': T('tab.settings'), 'service log': T('tab.history'), 'service report': T('tab.report'), 'identity': 'Identity', 'comms': 'Comms' };
+
+  return (
+    <div className="app">
+      {showQr && <QrScanModal onClose={() => setShowQr(false)} onFound={p => { setSelectedId(p.id); setTab('identity'); }}/>}
+      {/* Nav */}
+      <nav className="nav">
+        <a href="Tier1 Dashboard.html" className="nav-back">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9 2L4 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Dashboard
+        </a>
+        <span className="nav-sep">›</span>
+        <span className="breadcrumb">Fleet</span>
+        <span className="nav-sep">›</span>
+        <span className="breadcrumb active">{pump.id} — {pump.customer}</span>
+        <div className="nav-right">
+          <button className="btn btn-ghost" style={{ fontSize: 11, gap: 5 }} onClick={() => setShowQr(true)}>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.3"/><rect x="9" y="9" width="2" height="2" fill="currentColor"/><rect x="12" y="9" width="2" height="2" fill="currentColor"/><rect x="9" y="12" width="2" height="2" fill="currentColor"/><rect x="12" y="12" width="2" height="2" fill="currentColor"/></svg>
+            Scan QR
+          </button>
+          <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: col, background: `${col}20`, padding: '3px 10px', borderRadius: 999, border: `1px solid ${col}40` }}>
+            ● {statusLabel[pump.status]}
+          </span>
+          <button className="btn btn-primary">+ New Work Order</button>
+          <a href="Tier25 Field App.html" style={{ position:'relative', padding: '6px 14px', background: 'rgba(33,118,174,0.1)', borderRadius: 6, color: 'var(--blue)', fontSize: 12, fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(33,118,174,0.3)', display:'inline-flex', alignItems:'center', gap:5 }}>
+            Field App
+            {unread > 0 && <span style={{ background:'#F08A8A', color:'white', fontSize:9, fontWeight:700, fontFamily:'JetBrains Mono', borderRadius:999, minWidth:14, height:14, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>{unread}</span>}
+          </a>
+          <a href="Tier3 App.html" style={{ padding: '6px 14px', background: 'rgba(34,197,94,0.12)', borderRadius: 6, color: '#79D89F', fontSize: 12, fontWeight: 600, textDecoration: 'none', border: '1px solid rgba(34,197,94,0.3)' }}>Customer App →</a>
+          <LangToggle />
+          <ThemeToggle />
+        </div>
+      </nav>
+
+      <div className="body">
+        {/* Sidebar — pump list */}
+        <div className="sidebar">
+          <div className="sidebar-section">Pumps</div>
+          {YV.pumps.map(p => (
+            <div key={p.id} className={`pump-item ${p.id === selectedId ? 'active' : ''}`} onClick={() => setSelectedId(p.id)}>
+              <div className="pump-dot" style={{ background: statusColor[p.status] }}></div>
+              <div style={{ minWidth: 0 }}>
+                <div className="pump-item-name">{p.customer}</div>
+                <div className="pump-item-id">{p.id} · {p.region}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Main content */}
+        <div className="content">
+          <div className="tabs">
+            {tabs.map(t => (
+              <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+                {tabLabel[t] || t.charAt(0).toUpperCase() + t.slice(1)}
+              </div>
+            ))}
+          </div>
+
+          <div className="tab-content">
+            {tab === 'overview' && (
+              <div className="anim-in">
+                {/* Stats row */}
+                <div className="stats-grid">
+                  {[
+                    ['COP', pump.cop > 0 ? pump.cop.toFixed(1) : 'N/A', pump.cop >= 3 ? '#79D89F' : pump.cop >= 2 ? '#F5C66B' : '#F08A8A', 'Coefficient of performance'],
+                    ['Indoor', pump.temp_indoor + '°C', '#6BC4D6', 'Current room temperature'],
+                    ['Outdoor', pump.temp_outdoor + '°C', '#7f9ab5', 'Ambient temperature'],
+                    ['Today', pump.energy_today + ' kWh', '#F5C66B', 'Energy consumed today'],
+                  ].map(([label, val, color, sub]) => (
+                    <div key={label} className="stat-card">
+                      <div className="stat-val" style={{ color }}>{val}</div>
+                      <div className="stat-lbl">{label}</div>
+                      <div className="stat-sub">{sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Two column */}
+                <div className="two-col" style={{ marginBottom: 14 }}>
+                  {/* Device info */}
+                  <div className="card">
+                    <div className="card-header"><span className="card-title">Device Info</span></div>
+                    <div className="card-body">
+                      {[
+                        ['Model', pump.model],
+                        ['Serial', pump.id + '-SN-' + pump.id.replace('P','4891')],
+                        ['Region', pump.region],
+                        ['Address', pump.address],
+                        ['Installed', pump.installed],
+                        ['Last Seen', pump.last_seen],
+                        ['MyUplink', pump.status === 'fault' && pump.alerts[0]?.includes('offline') ? 'Offline' : 'Connected'],
+                      ].map(([k, v]) => (
+                        <div key={k} className="data-row">
+                          <span className="data-key">{k}</span>
+                          <span className="data-val" style={{ color: k === 'MyUplink' && v === 'Offline' ? '#F08A8A' : k === 'MyUplink' ? '#79D89F' : undefined }}>{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Active alerts */}
+                  <div className="card">
+                    <div className="card-header"><span className="card-title">Active Alerts</span></div>
+                    <div className="card-body">
+                      {pump.alerts.length === 0 ? (
+                        <div className="alert-item ok">
+                          <div className="alert-icon" style={{ background: 'rgba(34,197,94,0.1)' }}>✓</div>
+                          <div>
+                            <div className="alert-msg" style={{ color: '#79D89F' }}>No active alerts</div>
+                            <div className="alert-time">All systems nominal</div>
+                          </div>
+                        </div>
+                      ) : pump.alerts.map((a, i) => (
+                        <div key={i} className={`alert-item ${pump.status}`}>
+                          <div className="alert-icon" style={{ background: `${statusColor[pump.status]}15` }}>
+                            {pump.status === 'fault' ? '⚠' : '!'}
+                          </div>
+                          <div>
+                            <div className="alert-msg" style={{ color: statusColor[pump.status] }}>{a}</div>
+                            <div className="alert-time">{pump.last_seen}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {pump.alerts.length > 0 && (
+                        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                          <button className="btn btn-primary" style={{ fontSize: 11 }}>Create Work Order</button>
+                          <button className="btn btn-ghost" style={{ fontSize: 11 }}>Acknowledge</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Temperature graph */}
+                <div className="card">
+                  <div className="card-header">
+                    <span className="card-title">24-Hour Temperature & COP Trend</span>
+                    <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono', color: '#79D89F' }}>● Live</span>
+                  </div>
+                  <div className="card-body"><LiveChart pump={pump}/></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'live data' && (
+              <div className="anim-in">
+                <div className="three-col" style={{ marginBottom: 14 }}>
+                  {[
+                    ['Flow Temperature', pump.temp_indoor + 5.8 + '°C', 'Supply line', '#6BC4D6'],
+                    ['Return Temperature', pump.temp_indoor + 1.2 + '°C', 'Return line', '#7f9ab5'],
+                    ['Tank Temperature', pump.temp_indoor + 14.4 + '°C', 'Hot water tank', '#F5C66B'],
+                    ['Outdoor Temp', pump.temp_outdoor + '°C', 'Ambient', '#4a6480'],
+                    ['Compressor Freq', pump.cop > 0 ? '38.4 Hz' : '0 Hz', 'Operating frequency', '#79D89F'],
+                    ['Heat Pump Freq', pump.cop > 0 ? '50 Hz' : '0 Hz', 'Fan speed', '#6c63ff'],
+                  ].map(([label, val, sub, color]) => (
+                    <div key={label} className="stat-card">
+                      <div className="stat-val" style={{ fontSize: 20, color }}>{val}</div>
+                      <div className="stat-lbl">{label}</div>
+                      <div className="stat-sub">{sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="card">
+                  <div className="card-header"><span className="card-title">Extended Trend (7 days)</span></div>
+                  <div className="card-body"><LiveChart pump={pump}/></div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'work orders' && <WorkOrdersTab/>}
+            {tab === 'settings' && <SettingsTab pump={pump}/>}
+
+            {tab === 'service log' && (
+              <div className="anim-in">
+                <div className="two-col">
+                  <div>
+                    <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.08em' }}>History</span>
+                    </div>
+                    {[
+                      { type: 'fault', date: '2024-05-04', title: 'Fault E47 — Compressor Overload', desc: 'Compressor overload relay triggered. No heating or hot water. Emergency work order raised.' },
+                      { type: 'service', date: '2024-03-12', title: 'Quarterly Inspection', desc: 'All systems checked. Filter cleaned. COP measured at 3.6. Next service in 3 months.' },
+                      { type: 'service', date: '2023-11-28', title: 'Annual Service', desc: 'Full annual service completed by Pauli Rasmussen. Refrigerant charge verified. All OK.' },
+                      { type: 'fault', date: '2023-08-15', title: 'Communication Loss', desc: 'MyUplink offline for 2 hours due to router reset. Reconnected automatically.' },
+                      { type: 'install', date: pump.installed, title: 'Initial Installation', desc: `${pump.model} installed at ${pump.address}. Commissioned and handed over.` },
+                    ].map((entry, i) => (
+                      <div key={i} className={`log-entry ${entry.type}`}>
+                        <div className="log-date">{entry.date}</div>
+                        <div className="log-title">{entry.title}</div>
+                        <div className="log-desc">{entry.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono', color: '#4a6480', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Service Checklist</span>
+                    </div>
+                    <div className="card"><div className="card-body"><Checklist/></div></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {tab === 'service report' && <ServiceReportTab pump={pump}/>}
+            {tab === 'identity' && <LifecycleTab pump={pump}/>}
+            {tab === 'comms' && <CommTab/>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<ServiceApp/>);
+</script>
+</body>
+</html>

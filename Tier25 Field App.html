@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="YV Field">
+<meta name="theme-color" content="#0b1422">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<title>YV Field — Technician App</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="theme.js"></script>
+<script src="i18n.js"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="shared-data.js"></script>
+<script src="users.js"></script>
+<script src="notifications.js"></script>
+<script src="config.js"></script>
+<script src="minuba.js"></script>
+<script src="supabase.js"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0b1422; --bg2: #0f1a2c; --bg3: #131e30; --bg4: #1a2740;
+  --border: rgba(255,255,255,0.08); --text: #e8eef7; --text2: rgba(232,238,247,0.58); --text3: rgba(232,238,247,0.36);
+  --red: #F08A8A; --blue: #6BC4D6; --yellow: #F5C66B; --green: #79D89F;
+  --sans: 'Outfit', sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+html, body { width: 100%; height: 100%; background: var(--bg); font-family: var(--sans); margin: 0; overflow: hidden; }
+#root { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+.device-scaler { transform-origin: center center; display: flex; align-items: center; justify-content: center; }
+
+/* App shell */
+.shell { width: 100%; height: 844px; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; font-family: var(--sans); color: var(--text); position: relative; }
+.app-content { flex: 1; overflow-y: auto; padding: 0 16px 90px; }
+.app-content::-webkit-scrollbar { display: none; }
+
+/* Top bar */
+.top-bar { padding: 12px 16px 10px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.top-bar-title { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.top-bar-sub { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.top-bar-icon { width: 36px; height: 36px; background: var(--bg3); border-radius: 10px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+
+/* Bottom nav */
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: var(--bg2); border-top: 1px solid var(--border); display: flex; align-items: flex-start; padding-top: 10px; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.nav-item-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+.nav-item.active .nav-item-label { color: var(--blue); }
+
+/* Cards */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 10px; }
+.card-hd { padding: 11px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.card-hd-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); font-family: var(--mono); }
+.card-bd { padding: 13px 14px; }
+
+/* Job row */
+.job-row { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; cursor: pointer; transition: background 0.1s; -webkit-tap-highlight-color: transparent; }
+.job-row:last-child { border-bottom: none; }
+.job-row:active { background: var(--bg3); }
+.job-pri { width: 4px; border-radius: 2px; align-self: stretch; flex-shrink: 0; }
+.job-type { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+.job-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.job-addr { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.job-status { padding: 3px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; font-family: var(--mono); white-space: nowrap; }
+.job-status.open { background: rgba(192,57,43,0.15); color: var(--red); }
+.job-status.today { background: rgba(232,160,32,0.15); color: var(--yellow); }
+.job-status.done { background: rgba(30,158,94,0.15); color: var(--green); }
+
+/* QR scanner */
+.qr-scanner { background: #000; border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 14px; }
+.qr-frame { aspect-ratio: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+.qr-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); }
+.qr-window { position: absolute; width: 65%; aspect-ratio: 1; border-radius: 4px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.55); }
+.qr-c { position: absolute; width: 28px; height: 28px; border-color: white; border-style: solid; }
+.qr-c.tl { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+.qr-c.tr { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+.qr-c.bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+.qr-c.br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+.qr-scanline { position: absolute; left: 5%; right: 5%; height: 2px; background: linear-gradient(90deg, transparent, var(--blue), transparent); animation: scanline 1.8s ease-in-out infinite; }
+@keyframes scanline { 0%,100% { top: 10%; opacity: 0.5; } 50% { top: 88%; opacity: 1; } }
+
+/* Checklist mobile */
+.check-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.check-row:last-child { border-bottom: none; }
+.check-circle { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+.check-circle.done { background: var(--green); border-color: var(--green); }
+.check-text { font-size: 13px; flex: 1; line-height: 1.4; }
+.check-text.done { color: var(--text3); text-decoration: line-through; }
+.check-note-btn { font-size: 10px; color: var(--text3); font-family: var(--mono); flex-shrink: 0; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; }
+
+/* Photo grid */
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.photo-slot { background: var(--bg3); border: 1.5px dashed var(--border); border-radius: 10px; aspect-ratio: 4/3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: border-color 0.15s; }
+.photo-slot:active { border-color: var(--blue); }
+.photo-slot.filled { border-style: solid; border-color: var(--border); background: var(--bg4); }
+
+/* Pill button */
+.pill-btn { padding: 10px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; font-family: var(--sans); cursor: pointer; border: none; transition: all 0.15s; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pill-primary { background: var(--blue); color: #0b1422; }
+.pill-primary:active { background: #85cede; transform: scale(0.98); }
+.pill-blue { background: var(--blue); color: #0b1422; }
+.pill-blue:active { background: #85cede; transform: scale(0.98); }
+.pill-ghost { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+.pill-ghost:active { background: var(--bg4); }
+
+/* Sync status */
+.sync-bar { padding: 7px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; }
+.sync-text { font-size: 10px; font-family: var(--mono); color: var(--text3); }
+
+/* Step wizard */
+.step-indicator { display: flex; gap: 4px; padding: 0 16px 12px; flex-shrink: 0; }
+.step-dot { flex: 1; height: 3px; border-radius: 2px; transition: background 0.2s; }
+.step-active { background: var(--blue); }
+.step-done { background: var(--green); }
+.step-pending { background: var(--border); }
+
+/* Measurement input */
+.measure-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.measure-label { font-size: 12px; color: var(--text2); flex: 1; }
+.measure-input { width: 80px; background: var(--bg3); border: 1px solid var(--border); border-radius: 7px; padding: '6px 8px'; color: var(--text); font-size: 13px; font-family: var(--mono); text-align: right; outline: none; }
+.measure-unit { font-size: 11px; font-family: var(--mono); color: var(--text3); min-width: 28px; }
+
+/* Offline banner */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.anim-in { animation: fadeIn 0.2s ease forwards; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div id="auth-gate" style="position:fixed;inset:0;background:#0b1422;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;"><svg width="28" height="28" viewBox="0 0 28 28" style="animation:ag-spin 0.9s linear infinite"><circle cx="14" cy="14" r="11" stroke="rgba(107,196,214,0.15)" stroke-width="3" fill="none"/><path d="M14 3 A11 11 0 0 1 25 14" stroke="#6BC4D6" stroke-width="3" stroke-linecap="round" fill="none"/></svg><div style="color:rgba(238,242,247,0.35);font-size:13px;font-family:Outfit,sans-serif;font-weight:500;letter-spacing:0.02em">Checking session…</div><style>@keyframes ag-spin{to{transform:rotate(360deg)}}</style></div>
+<script>
+(async function(){
+  if(!window.YV_AUTH){document.getElementById('auth-gate').style.display='none';return;}
+  const u=await YV_AUTH.requireRole('admin','installer');
+  if(u){document.getElementById('auth-gate').style.display='none';const _ld=window.YV?.loadFromSupabase||window.YV_loadFromSupabase;if(_ld)_ld();}
+})();
+</script>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const CHECKLIST = [
+  { id:'c1',  sec:'Visual',     text:'Check for physical damage or corrosion' },
+  { id:'c2',  sec:'Visual',     text:'Inspect pipe connections for leaks' },
+  { id:'c3',  sec:'Visual',     text:'Verify all safety labels legible' },
+  { id:'c4',  sec:'Refrigerant',text:'Check refrigerant pressure (high/low)' },
+  { id:'c5',  sec:'Refrigerant',text:'Inspect compressor — vibration/noise' },
+  { id:'c6',  sec:'Air',        text:'Clean/replace air filter' },
+  { id:'c7',  sec:'Air',        text:'Clean heat exchanger coils' },
+  { id:'c8',  sec:'Air',        text:'Check fan blades and motor' },
+  { id:'c9',  sec:'Hydraulics', text:'Check circulation pump' },
+  { id:'c10', sec:'Hydraulics', text:'Top up system water pressure' },
+  { id:'c11', sec:'Controls',   text:'Check all electrical connections' },
+  { id:'c12', sec:'Controls',   text:'Test defrost cycle' },
+  { id:'c13', sec:'Controls',   text:'Verify MyUplink connectivity' },
+  { id:'c14', sec:'Performance',text:'Record flow temperature' },
+  { id:'c15', sec:'Performance',text:'Record return temperature' },
+  { id:'c16', sec:'Performance',text:'Measure and log COP' },
+  { id:'c17', sec:'Performance',text:'Read and log energy meter (kWh)' },
+  { id:'c18', sec:'Handover',   text:'Brief customer on findings' },
+  { id:'c19', sec:'Handover',   text:'Confirm next service date' },
+];
+
+// MY_JOBS loaded from Supabase + Minuba — see useJobs() hook below
+function useJobs() {
+  const [jobs, setJobs] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const allJobs = [];
+
+      // ── Supabase work orders ──────────────────────────────────────────────────
+      if (window.YV_SB && window.YV_AUTH) {
+        const user = await YV_AUTH.getUser();
+        const name = user?.profile?.name;
+        let query = YV_SB.from('work_orders').select('*').neq('status', 'completed');
+        if (name) query = query.eq('assigned', name);
+        const { data, error } = await query.order('due', { ascending: true });
+        if (!error && data) {
+          data.forEach(wo => allJobs.push({
+            ...wo,
+            _source: 'supabase',
+            pump: YV.pumps.find(p => p.id === wo.pump_id) || null,
+            note: wo.description,
+            time: wo.due || 'TBD',
+          }));
+        }
+      }
+
+      // ── Minuba orders ─────────────────────────────────────────────────────────
+      if (window.MinubaAPI?.isConfigured()) {
+        try {
+          const response = await MinubaAPI.getOrders({ status: 'ACTIVE' });
+          const orders = Array.isArray(response) ? response : (response?.orders || response?.results || []);
+          orders.forEach(order => {
+            const job = MinubaAPI.orderToJob(order);
+            // De-dupe: don't add if same pump already has a Supabase job
+            const isDupe = allJobs.some(j => j.pump?.id && j.pump.id === job.pump?.id);
+            if (!isDupe) allJobs.push(job);
+          });
+        } catch (e) {
+          console.warn('[Minuba] Could not load orders:', e.message);
+        }
+      }
+
+      // Sort by due date, high priority first
+      allJobs.sort((a, b) => {
+        if (a.priority === 'high' && b.priority !== 'high') return -1;
+        if (b.priority === 'high' && a.priority !== 'high') return 1;
+        return (a.due || '').localeCompare(b.due || '');
+      });
+
+      setJobs(allJobs);
+      setLoaded(true);
+    })();
+  }, []);
+
+  async function updateStatus(id, next) {
+    const job = jobs.find(j => j.id === id);
+
+    // Update Supabase for local jobs
+    if (window.YV_SB && job?._source === 'supabase') {
+      const { error } = await YV_SB.from('work_orders').update({ status: next }).eq('id', id);
+      if (error) return false;
+    }
+
+    setJobs(prev => next === 'completed'
+      ? prev.filter(j => j.id !== id)
+      : prev.map(j => j.id === id ? { ...j, status: next } : j)
+    );
+    return true;
+  }
+
+  return { jobs, loaded, updateStatus };
+}
+
+// ── Screens ──────────────────────────────────────────────────
+
+const TodayScreen = ({ onJobSelect, jobs, loaded, updateStatus, userName }) => {
+  const date = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+  const open = jobs.filter(j => j.status !== 'completed');
+  const done = [];  // completed jobs are removed from the feed after closing
+  const emergency = open.find(j => j.priority === 'high');
+
+  if (!loaded) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', color:'var(--text3)', fontSize:13, fontFamily:'var(--mono)' }}>
+      Loading jobs…
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="top-bar">
+        <div>
+          <div className="top-bar-title">Good morning,</div>
+          <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text2)' }}>
+            {userName ? userName.split(' ')[0] : 'Installer'}
+          </div>
+          <div className="top-bar-sub" style={{ marginTop: 4 }}>{date}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, fontFamily: 'var(--mono)', color: 'var(--blue)', letterSpacing: '-0.04em' }}>{open.length}</div>
+          <div style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'var(--mono)', textTransform: 'uppercase' }}>open jobs</div>
+        </div>
+      </div>
+
+      {/* Emergency alert */}
+      {emergency && (
+        <div style={{ margin: '0 16px 12px', background:'rgba(192,57,43,0.1)', border:'1px solid rgba(192,57,43,0.3)', borderRadius:12, padding:'11px 13px', display:'flex', gap:10, alignItems:'center' }}>
+          <div style={{ width:8, height:8, borderRadius:'50%', background:'#F08A8A', flexShrink:0, boxShadow:'0 0 8px #F08A8A' }}></div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#F08A8A' }}>Emergency — {emergency.customer || emergency.pump_id}</div>
+            <div style={{ fontSize:11, color:'#7f9ab5', marginTop:1 }}>{emergency.description}</div>
+          </div>
+          <button onClick={() => onJobSelect(emergency)} style={{ padding:'5px 10px', background:'#F08A8A', border:'none', borderRadius:7, color:'white', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Outfit' }}>Go →</button>
+        </div>
+      )}
+
+      <div className="app-content" style={{ padding:'0 16px 90px' }}>
+        {/* Route summary */}
+        <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:14, padding:'12px 14px', marginBottom:12 }}>
+          <div style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Today's Route</div>
+          <div style={{ display:'flex', gap:0 }}>
+            {['Tórshavn','Velbastaður','Tvøroyri','Done'].map((loc,i,arr) => (
+              <div key={loc} style={{ flex:1, textAlign:'center', position:'relative' }}>
+                <div style={{ width:10, height:10, borderRadius:'50%', background: i<2 ? '#79D89F' : i===2 ? '#6BC4D6' : '#2a3f58', margin:'0 auto 4px', border: i===2 ? '2px solid #6BC4D6' : 'none', boxShadow: i===2 ? '0 0 8px #6BC4D6' : 'none' }}></div>
+                <div style={{ fontSize:9, color: i<2 ? '#79D89F' : i===2 ? '#eef2f7' : '#4a6480', fontFamily:'var(--mono)', whiteSpace:'nowrap' }}>{loc}</div>
+                {i < arr.length-1 && <div style={{ position:'absolute', top:4, left:'60%', right:0, height:1, background: i<1 ? '#79D89F' : '#2a3f58' }}></div>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Jobs */}
+        <div className="card-hd" style={{ padding:'0 0 6px', border:'none', background:'none' }}>
+          <span className="card-hd-title">Open Jobs</span>
+          <span style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>{open.length} remaining</span>
+        </div>
+        <div className="card" style={{ marginBottom:14 }}>
+          {open.map((job,i) => (
+            <div key={job.id} className="job-row" onClick={() => onJobSelect(job)}>
+              <div className="job-pri" style={{ background: job.priority==='high'?'#F08A8A': job.priority==='medium'?'#F5C66B':'#4a6480' }}></div>
+              <div style={{ width:36, height:36, background:'var(--bg3)', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:11, fontWeight:700, fontFamily:'var(--mono)', color:'var(--text3)' }}>{job.time}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div className="job-type">{job.id} · {job.type}</div>
+                <div className="job-name">{job.pump?.customer}</div>
+                <div className="job-addr">{job.pump?.address}</div>
+              </div>
+              <span className={`job-status ${job.status}`}>{job.status}</span>
+            </div>
+          ))}
+        </div>
+
+        {done.length > 0 && (
+          <>
+            <div className="card-hd" style={{ padding:'0 0 6px', border:'none', background:'none' }}>
+              <span className="card-hd-title">Completed Today</span>
+            </div>
+            <div className="card">
+              {done.map(job => (
+                <div key={job.id} className="job-row" style={{ opacity:0.6 }}>
+                  <div className="job-pri" style={{ background:'#79D89F' }}></div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div className="job-name">{job.pump?.customer}</div>
+                    <div className="job-addr">{job.note}</div>
+                  </div>
+                  <span className="job-status done">done</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── Scan Screen ──────────────────────────────────────────────
+const ScanScreen = ({ onFound }) => {
+  const [stage, setStage] = useState('idle'); // idle | scanning | found
+  const [found, setFound] = useState(null);
+
+  const startScan = () => {
+    setStage('scanning');
+    setTimeout(() => {
+      const p = YV.pumps[Math.floor(Math.random() * YV.pumps.length)];
+      setFound(p); setStage('found');
+    }, 2000);
+  };
+
+  return (
+    <div>
+      <div className="top-bar">
+        <div>
+          <div className="top-bar-title">Scan QR</div>
+          <div className="top-bar-sub">Identify pump by label</div>
+        </div>
+        <div className="top-bar-icon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="#7f9ab5" strokeWidth="1.3"/><rect x="10" y="1" width="5" height="5" rx="1" stroke="#7f9ab5" strokeWidth="1.3"/><rect x="1" y="10" width="5" height="5" rx="1" stroke="#7f9ab5" strokeWidth="1.3"/><rect x="11" y="11" width="2" height="2" fill="#7f9ab5"/><rect x="13" y="11" width="2" height="2" fill="#7f9ab5"/><rect x="11" y="13" width="2" height="2" fill="#7f9ab5"/><rect x="13" y="13" width="2" height="2" fill="#7f9ab5"/></svg>
+        </div>
+      </div>
+      <div className="app-content" style={{ padding:'0 16px 90px' }}>
+        <div className="qr-scanner">
+          <div className="qr-frame">
+            <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg, #0a1520, #0d1e30)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              {stage === 'idle' && <div style={{ fontSize:40, opacity:0.2 }}>📷</div>}
+              {stage === 'scanning' && (
+                <>
+                  <div style={{ fontSize:11, color:'#4a6480', fontFamily:'var(--mono)', zIndex:2 }}>Scanning…</div>
+                  <div className="qr-scanline" style={{ zIndex:2 }}></div>
+                  <div style={{ position:'absolute', inset:'17.5%', border:'none' }}>
+                    <div className="qr-c tl"></div><div className="qr-c tr"></div>
+                    <div className="qr-c bl"></div><div className="qr-c br"></div>
+                  </div>
+                </>
+              )}
+              {stage === 'found' && found && (
+                <div style={{ zIndex:2, textAlign:'center' }}>
+                  <div style={{ fontSize:32, marginBottom:6 }}>✓</div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#79D89F' }}>Pump found</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {stage === 'idle' && (
+          <button className="pill-btn pill-blue" style={{ width:'100%', marginBottom:10 }} onClick={startScan}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" stroke="white" strokeWidth="1.3"/><rect x="10" y="1" width="5" height="5" rx="1" stroke="white" strokeWidth="1.3"/><rect x="1" y="10" width="5" height="5" rx="1" stroke="white" strokeWidth="1.3"/></svg>
+            Start Scan
+          </button>
+        )}
+
+        {stage === 'scanning' && (
+          <div style={{ textAlign:'center', padding:'14px 0', fontSize:13, color:'var(--text2)' }}>
+            Point at the QR label on the pump unit…
+          </div>
+        )}
+
+        {stage === 'found' && found && (
+          <div className="anim-in">
+            <div style={{ background:'rgba(30,158,94,0.08)', border:'1px solid rgba(30,158,94,0.25)', borderRadius:12, padding:'12px 14px', marginBottom:12, display:'flex', gap:10 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'#79D89F' }}>Pump identified</div>
+                <div style={{ fontSize:11, color:'#7f9ab5', marginTop:2 }}>{found.id} · Serial verified via MyUplink</div>
+              </div>
+            </div>
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-bd">
+                {[['Model',found.model],['Customer',found.customer],['Address',found.address],['Status',found.status.toUpperCase()],['Last service','2024-03-12']].map(([k,v]) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                    <span style={{ fontSize:12, color:'var(--text2)' }}>{k}</span>
+                    <span style={{ fontSize:12, fontFamily:'var(--mono)', color: k==='Status' ? (found.status==='ok'?'#79D89F':found.status==='fault'?'#F08A8A':'#F5C66B') : 'var(--text)' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button className="pill-btn pill-primary" style={{ flex:1 }} onClick={() => onFound(found)}>Start Service →</button>
+              <button className="pill-btn pill-ghost" onClick={() => setStage('idle')}>Scan Again</button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop:14 }}>
+          <div style={{ fontSize:11, color:'var(--text3)', marginBottom:8, fontFamily:'var(--mono)', textTransform:'uppercase', letterSpacing:'0.06em' }}>Or select manually</div>
+          {YV.pumps.slice(0,5).map(p => (
+            <div key={p.id} onClick={() => { setFound(p); setStage('found'); }}
+              style={{ padding:'9px 12px', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:10, marginBottom:6, display:'flex', gap:10, alignItems:'center', cursor:'pointer' }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background: YV.statusColor[p.status], flexShrink:0 }}></div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:12, fontWeight:600 }}>{p.customer}</div>
+                <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>{p.id} · {p.region}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Job / Service Wizard ──────────────────────────────────────
+const ServiceWizard = ({ job, pump: initPump, onBack }) => {
+  const pump = job?.pump || initPump;
+  const [step, setStep] = useState(0); // 0=overview 1=checklist 2=measurements 3=photos 4=report 5=done
+  const [checked, setChecked] = useState(new Set());
+  const [photos, setPhotos] = useState([false,false,false,false]);
+  const [measurements, setMeasurements] = useState({ flow:'', return:'', tank:'', cop:'', kwh:'' });
+  const [description, setDescription] = useState('');
+  const [timeHours, setTimeHours] = useState('1.5');
+  const [minubaPush, setMinubaPush] = useState('idle'); // idle | pushing | done | error | skipped
+  const [minubaError, setMinubaError] = useState('');
+  const steps = ['Overview','Checklist','Measurements','Photos','Report'];
+  const today = new Date().toISOString().split('T')[0];
+
+  if (!pump) return null;
+
+  const pushToMinuba = async () => {
+    if (!window.MinubaAPI?.isConfigured()) { setMinubaPush('skipped'); return; }
+    setMinubaPush('pushing');
+    try {
+      const installer = window.YV_USERS?.installers?.[0];
+      await MinubaAPI.pushServiceReport({
+        pump,
+        installer,
+        checked,
+        checklist: CHECKLIST,
+        measurements,
+        timeHours: parseFloat(timeHours) || 0,
+        description,
+        date: today,
+      });
+      setMinubaPush('done');
+    } catch (e) {
+      console.error('[Minuba] push failed:', e);
+      setMinubaError(e.message);
+      setMinubaPush('error');
+    }
+  };
+
+  if (step === 5) {
+    return (
+      <div className="anim-in" style={{ height:'100%', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:24, textAlign:'center' }}>
+        <div style={{ width:72, height:72, background:'rgba(121,216,159,0.12)', border:'2px solid rgba(121,216,159,0.4)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:18 }}>✓</div>
+        <div style={{ fontSize:22, fontWeight:800, marginBottom:6 }}>Service Complete</div>
+        <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.6, marginBottom:20 }}>
+          Report submitted and stamped.<br/>
+          Pump {pump.id} record updated.<br/>
+          <span style={{ fontFamily:'var(--mono)', fontSize:11, color:'var(--text3)' }}>{today} · Pauli Rasmussen</span>
+        </div>
+
+        {/* Official stamp */}
+        <div style={{ border:'2px solid rgba(240,138,138,0.4)', borderRadius:12, padding:'14px 20px', width:'100%', maxWidth:280, marginBottom:16 }}>
+          <div style={{ fontSize:12, fontWeight:700, marginBottom:4 }}>Maria Poulsen Rør</div>
+          <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', marginBottom:8 }}>Certified CTC Service</div>
+          {[['Pump',pump.id],['Date',today],['Checks',checked.size+'/'+CHECKLIST.length],['Tech','Pauli Rasmussen'],['Hours',timeHours+'h']].map(([k,v]) => (
+            <div key={k} style={{ display:'flex', justifyContent:'space-between', marginBottom:2 }}>
+              <span style={{ fontSize:10, color:'var(--text3)' }}>{k}</span>
+              <span style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text)' }}>{v}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Minuba push status */}
+        {window.MinubaAPI?.isConfigured() ? (
+          <div style={{ width:'100%', maxWidth:280, marginBottom:16 }}>
+            {minubaPush === 'idle' && (
+              <button onClick={pushToMinuba}
+                style={{ width:'100%', padding:'12px 0', borderRadius:12, background:'rgba(107,196,214,0.12)', border:'1px solid rgba(107,196,214,0.3)', color:'var(--blue)', fontWeight:600, fontSize:13, cursor:'pointer', fontFamily:'var(--sans)' }}>
+                → Send to Minuba
+              </button>
+            )}
+            {minubaPush === 'pushing' && (
+              <div style={{ fontSize:12, color:'var(--text2)', textAlign:'center', padding:'10px 0' }}>Sending to Minuba…</div>
+            )}
+            {minubaPush === 'done' && (
+              <div style={{ fontSize:12, color:'var(--green)', textAlign:'center', padding:'10px 0', background:'rgba(121,216,159,0.08)', borderRadius:10, border:'1px solid rgba(121,216,159,0.2)' }}>
+                ✓ Order created in Minuba
+              </div>
+            )}
+            {minubaPush === 'error' && (
+              <div style={{ fontSize:11, color:'var(--red)', textAlign:'center', padding:'10px 0', background:'rgba(240,138,138,0.06)', borderRadius:10, border:'1px solid rgba(240,138,138,0.2)' }}>
+                Minuba error — {minubaError}<br/>
+                <span style={{ color:'var(--text3)', fontSize:10 }}>Report saved locally.</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ width:'100%', maxWidth:280, marginBottom:16, padding:'10px', borderRadius:10, background:'var(--bg3)', border:'1px solid var(--border)', textAlign:'left' }}>
+            <div style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', marginBottom:4 }}>MINUBA NOT CONNECTED</div>
+            <div style={{ fontSize:12, color:'var(--text2)' }}>Add your API key in config.js to send reports directly to Minuba.</div>
+          </div>
+        )}
+
+        <div style={{ display:'flex', gap:8, width:'100%', maxWidth:280 }}>
+          <button className="pill-btn pill-primary" style={{ flex:1 }} onClick={() => window.print()}>PDF Report</button>
+          <button className="pill-btn pill-ghost" onClick={onBack}>Back to jobs</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ height:'100%', display:'flex', flexDirection:'column' }}>
+      {/* Header */}
+      <div style={{ padding:'12px 16px 0', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+          <button onClick={onBack} style={{ background:'none', border:'none', color:'var(--text2)', cursor:'pointer', padding:0, display:'flex', alignItems:'center' }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:14, fontWeight:700 }}>{pump.customer}</div>
+            <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)' }}>{pump.id} · {job?.type || 'Service'}</div>
+          </div>
+          <div style={{ fontSize:11, fontFamily:'var(--mono)', padding:'3px 9px', borderRadius:999, background:`${YV.statusColor[pump.status]}18`, color:YV.statusColor[pump.status], border:`1px solid ${YV.statusColor[pump.status]}40` }}>
+            {pump.status}
+          </div>
+        </div>
+      </div>
+
+      {/* Step bar */}
+      <div className="step-indicator">
+        {steps.map((_,i) => (
+          <div key={i} className={`step-dot ${i < step ? 'step-done' : i === step ? 'step-active' : 'step-pending'}`}></div>
+        ))}
+      </div>
+
+      {/* Step label */}
+      <div style={{ padding:'0 16px 10px', flexShrink:0, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+        <div style={{ fontSize:16, fontWeight:700 }}>{steps[step]}</div>
+        <div style={{ fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)' }}>Step {step+1}/{steps.length}</div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex:1, overflowY:'auto', padding:'0 16px' }} className="app-content" style={{ padding:'0 16px 16px' }}>
+
+        {/* STEP 0: Overview */}
+        {step === 0 && (
+          <div className="anim-in">
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-bd">
+                {[['Address',pump.address],['Region',pump.region],['Model',pump.model],['Installed',pump.installed],['COP',pump.cop>0?pump.cop.toFixed(1):'FAULT'],['Last seen',pump.last_seen]].map(([k,v]) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'7px 0', borderBottom:'1px solid var(--border)' }}>
+                    <span style={{ fontSize:12, color:'var(--text2)' }}>{k}</span>
+                    <span style={{ fontSize:12, fontFamily:'var(--mono)', color:'var(--text)' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {pump.alerts.length > 0 && (
+              <div style={{ background:'rgba(192,57,43,0.08)', border:'1px solid rgba(192,57,43,0.25)', borderRadius:12, padding:'11px 13px', marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:'#F08A8A', marginBottom:4 }}>Active Alerts</div>
+                {pump.alerts.map((a,i) => <div key={i} style={{ fontSize:12, color:'#7f9ab5' }}>• {a}</div>)}
+              </div>
+            )}
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-hd"><span className="card-hd-title">Previous Service</span></div>
+              <div className="card-bd">
+                <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.5 }}>Annual service — 2024-03-12<br/><span style={{ fontSize:11, color:'var(--text3)' }}>By Súni Jacobsen · All OK</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 1: Checklist */}
+        {step === 1 && (
+          <div className="anim-in">
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+              <span style={{ fontSize:12, color:'var(--text2)' }}>{checked.size}/{CHECKLIST.length} complete</span>
+              <div style={{ height:4, width:120, background:'var(--bg3)', borderRadius:2, overflow:'hidden' }}>
+                <div style={{ height:'100%', width:`${(checked.size/CHECKLIST.length)*100}%`, background: checked.size===CHECKLIST.length?'#79D89F':'#6BC4D6', transition:'width 0.2s' }}></div>
+              </div>
+            </div>
+            {[...new Set(CHECKLIST.map(c=>c.sec))].map(sec => (
+              <div key={sec} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>{sec}</div>
+                <div className="card">
+                  <div className="card-bd" style={{ padding:'4px 12px' }}>
+                    {CHECKLIST.filter(c=>c.sec===sec).map(item => (
+                      <div key={item.id} className="check-row" onClick={() => { const s=new Set(checked); s.has(item.id)?s.delete(item.id):s.add(item.id); setChecked(s); }}>
+                        <div className={`check-circle ${checked.has(item.id)?'done':''}`}>
+                          {checked.has(item.id) && <svg width="11" height="11" viewBox="0 0 11 11"><path d="M2 5.5l2.5 2.5L9 3" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>}
+                        </div>
+                        <span className={`check-text ${checked.has(item.id)?'done':''}`}>{item.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* STEP 2: Measurements */}
+        {step === 2 && (
+          <div className="anim-in">
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-hd"><span className="card-hd-title">Temperature Readings</span></div>
+              <div className="card-bd" style={{ padding:'6px 14px' }}>
+                {[['Flow temp','°C','flow'],['Return temp','°C','return'],['Tank temp','°C','tank']].map(([label,unit,key]) => (
+                  <div key={key} className="measure-row">
+                    <span className="measure-label">{label}</span>
+                    <input className="measure-input" type="number" step="0.1" placeholder="—"
+                      value={measurements[key]}
+                      onChange={e => setMeasurements(m=>({...m,[key]:e.target.value}))}
+                      style={{ width:80, background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:7, padding:'6px 8px', color:'var(--text)', fontSize:13, fontFamily:'var(--mono)', textAlign:'right', outline:'none' }}/>
+                    <span className="measure-unit">{unit}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-hd"><span className="card-hd-title">Performance</span></div>
+              <div className="card-bd" style={{ padding:'6px 14px' }}>
+                {[['COP','—','cop'],['Energy meter','kWh','kwh']].map(([label,unit,key]) => (
+                  <div key={key} className="measure-row">
+                    <span className="measure-label">{label}</span>
+                    <input className="measure-input" type="number" step="0.01" placeholder="—"
+                      value={measurements[key]}
+                      onChange={e => setMeasurements(m=>({...m,[key]:e.target.value}))}
+                      style={{ width:80, background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:7, padding:'6px 8px', color:'var(--text)', fontSize:13, fontFamily:'var(--mono)', textAlign:'right', outline:'none' }}/>
+                    <span className="measure-unit">{unit}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-hd"><span className="card-hd-title">Notes</span></div>
+              <div className="card-bd">
+                <textarea value={description} onChange={e=>setDescription(e.target.value)}
+                  placeholder="Any findings, issues, or notes…" rows="4"
+                  style={{ width:'100%', background:'transparent', border:'none', color:'var(--text)', fontSize:13, fontFamily:'Outfit', outline:'none', resize:'none', lineHeight:1.5 }}/>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Photos */}
+        {step === 3 && (
+          <div className="anim-in">
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:12, lineHeight:1.5 }}>
+              Tap a slot to attach a photo. These are stored permanently on the pump's service record.
+            </div>
+            <div className="photo-grid" style={{ marginBottom:14 }}>
+              {['Before','After','Issue found','Components'].map((label,i) => (
+                <div key={i}>
+                  <div style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{label}</div>
+                  <div className={`photo-slot ${photos[i]?'filled':''}`}
+                    onClick={() => { const p=[...photos]; p[i]=!p[i]; setPhotos(p); }}>
+                    {photos[i] ? (
+                      <div style={{ fontSize:28 }}>📸</div>
+                    ) : (
+                      <>
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="11" rx="2" stroke="#4a6480" strokeWidth="1.3"/><circle cx="10" cy="10.5" r="2.5" stroke="#4a6480" strokeWidth="1.3"/><path d="M6.5 5l1.2-2h4.6L13.5 5" stroke="#4a6480" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                        <span style={{ fontSize:9, color:'var(--text3)', fontFamily:'var(--mono)' }}>Add photo</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize:11, color:'var(--4a6480)', textAlign:'center', fontStyle:'italic', color:'var(--text3)' }}>
+              {photos.filter(Boolean).length} photo{photos.filter(Boolean).length!==1?'s':''} attached
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Report */}
+        {step === 4 && (
+          <div className="anim-in">
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-hd"><span className="card-hd-title">Service Summary</span></div>
+              <div className="card-bd">
+                {[['Pump',pump.id+' · '+pump.model],['Customer',pump.customer],['Date',today],['Checklist',checked.size+'/'+CHECKLIST.length+' items'],['Photos',photos.filter(Boolean).length+' attached'],['COP',measurements.cop||pump.cop.toFixed(1)],['Flow temp',measurements.flow?measurements.flow+'°C':'not recorded']].map(([k,v]) => (
+                  <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                    <span style={{ fontSize:12, color:'var(--text2)' }}>{k}</span>
+                    <span style={{ fontSize:12, fontFamily:'var(--mono)', color:'var(--text)' }}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {description && (
+              <div className="card" style={{ marginBottom:12 }}>
+                <div className="card-hd"><span className="card-hd-title">Notes</span></div>
+                <div className="card-bd" style={{ fontSize:13, color:'var(--text2)', lineHeight:1.5 }}>{description}</div>
+              </div>
+            )}
+            {/* Time logged */}
+            <div className="card" style={{ marginBottom:12 }}>
+              <div className="card-hd"><span className="card-hd-title">Time logged</span></div>
+              <div className="card-bd" style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <input
+                  type="number" min="0" max="24" step="0.5" value={timeHours}
+                  onChange={e => setTimeHours(e.target.value)}
+                  style={{ width:72, padding:'7px 10px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text)', fontFamily:'var(--mono)', fontSize:15, fontWeight:700, textAlign:'center' }}
+                />
+                <span style={{ fontSize:13, color:'var(--text2)' }}>hours on site</span>
+              </div>
+            </div>
+
+            <div style={{ background:'var(--bg4)', border:'1px solid var(--border)', borderRadius:12, padding:'12px 14px', marginBottom:12, display:'flex', gap:12, alignItems:'center' }}>
+              <div style={{ width:38, height:38, background:'rgba(107,196,214,0.12)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'var(--blue)', flexShrink:0 }}>PR</div>
+              <div>
+                <div style={{ fontSize:13, fontWeight:600 }}>Pauli Rasmussen</div>
+                <div style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)' }}>CTC Certified · Maria Poulsen Rør</div>
+              </div>
+              <div style={{ marginLeft:'auto', fontSize:11, fontFamily:'var(--mono)', color:'var(--text3)' }}>{today}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer nav */}
+      <div style={{ padding:'10px 16px 16px', flexShrink:0, display:'flex', gap:8, background:'var(--bg)', borderTop:'1px solid var(--border)' }}>
+        {step > 0 && <button className="pill-btn pill-ghost" onClick={() => setStep(s=>s-1)}>← Back</button>}
+        <button className="pill-btn pill-primary" style={{ flex:1 }}
+          onClick={() => step < steps.length-1 ? setStep(s=>s+1) : setStep(5)}>
+          {step === steps.length-1 ? 'Submit & Stamp ✓' : `Next: ${steps[step+1]} →`}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── Alerts Screen ────────────────────────────────────────────
+const AlertsScreen = ({ installerId = 'I001' }) => {
+  const [notifs, setNotifs] = useState([]);
+  const [resolveId, setResolveId] = useState(null);
+  const [resolveNote, setResolveNote] = useState('');
+  const [msgId, setMsgId] = useState(null);
+  const [msgText, setMsgText] = useState('');
+
+  const load = () => {
+    if (window.YV_NOTIFY) {
+      const all = YV_NOTIFY.getForInstaller(installerId)
+        .sort((a, b) => b.timestamp - a.timestamp);
+      setNotifs(all);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    if (window.YV_NOTIFY) return YV_NOTIFY.onNew(() => load());
+  }, []);
+
+  const typeColor = { fault:'#F08A8A', warning:'#F5C66B', help_request:'#F08A8A', message:'#6BC4D6', resolved:'#79D89F', info:'#4a6480' };
+  const typeLabel = { fault:'FAULT', warning:'WARNING', help_request:'🆘 HELP', message:'MSG', resolved:'✓ CLEARED', info:'INFO' };
+
+  const ago = ts => {
+    const m = Math.round((Date.now() - ts) / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m}m ago`;
+    return `${Math.round(m/60)}h ago`;
+  };
+
+  const pump = pumpId => YV.pumps.find(p => p.id === pumpId);
+
+  const unresolved = notifs.filter(n => !n.resolved);
+  const resolved   = notifs.filter(n => n.resolved);
+
+  const doResolve = (id) => {
+    YV_NOTIFY.resolve(id, resolveNote);
+    setResolveId(null);
+    setResolveNote('');
+    load();
+  };
+
+  const doMsg = (id) => {
+    if (!msgText.trim()) return;
+    const installer = window.YV_USERS?.installers.find(i => i.id === installerId);
+    YV_NOTIFY.addMessage(id, installer?.name || 'Installer', msgText.trim());
+    setMsgId(null);
+    setMsgText('');
+    load();
+  };
+
+  const NotifCard = ({ n }) => {
+    const p = pump(n.pumpId);
+    const col = typeColor[n.type] || '#4a6480';
+    const isUrgent = n.type === 'help_request' || (n.type === 'fault' && !n.acked);
+    return (
+      <div onClick={() => !n.resolved && YV_NOTIFY.acknowledge(n.id) && load()}
+        style={{ background: isUrgent ? 'rgba(192,57,43,0.06)' : 'var(--bg2)', border:`1px solid ${isUrgent ? 'rgba(192,57,43,0.3)' : 'var(--border)'}`, borderRadius:14, padding:'12px 13px', marginBottom:10 }}>
+        <div style={{ display:'flex', gap:9, alignItems:'flex-start' }}>
+          <div style={{ width:6, borderRadius:3, background:col, alignSelf:'stretch', flexShrink:0, minHeight:40 }}></div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3 }}>
+              <span style={{ fontSize:9, fontFamily:'var(--mono)', fontWeight:700, color:col, letterSpacing:'0.08em' }}>{typeLabel[n.type]}</span>
+              <span style={{ fontSize:9, fontFamily:'var(--mono)', color:'var(--text3)' }}>{ago(n.timestamp)}</span>
+            </div>
+            <div style={{ fontSize:13, fontWeight:700, marginBottom:2 }}>{n.title}</div>
+            <div style={{ fontSize:11, color:'var(--text2)', marginBottom: p ? 4 : 0 }}>{n.body}</div>
+            {p && <div style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)' }}>{p.id} · {p.address}</div>}
+            {p && (p.phone || p.email) && (
+              <div style={{ display:'flex', gap:6, marginTop:6, flexWrap:'wrap' }}>
+                {p.phone && (
+                  <a href={`tel:${p.phone.replace(/\s/g,'')}`}
+                    style={{ fontSize:11, fontWeight:600, color:'#79D89F', background:'rgba(30,158,94,0.1)',
+                      border:'1px solid rgba(30,158,94,0.3)', borderRadius:6, padding:'3px 9px',
+                      textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M5.5 2C5.5 2 4 2 3 3.5 2 5 3.5 7.5 5.5 9.5s4.5 3.5 6 2.5S13 9 13 9l-2-1.5L9.5 9s-1-1-2-2-2-2-2-2L7 3.5 5.5 2Z" stroke="#79D89F" strokeWidth="1.3" fill="none"/></svg>
+                    {p.phone}
+                  </a>
+                )}
+                {p.email && (
+                  <a href={`mailto:${p.email}`}
+                    style={{ fontSize:11, fontWeight:600, color:'#6BC4D6', background:'rgba(33,118,174,0.1)',
+                      border:'1px solid rgba(33,118,174,0.3)', borderRadius:6, padding:'3px 9px',
+                      textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="1.5" stroke="#6BC4D6" strokeWidth="1.3"/><path d="M2 5l6 5 6-5" stroke="#6BC4D6" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                    Email
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Thread preview */}
+            {n.thread?.length > 0 && (
+              <div style={{ marginTop:8, borderTop:'1px solid var(--border)', paddingTop:6 }}>
+                {n.thread.slice(-2).map((m, i) => (
+                  <div key={i} style={{ fontSize:11, color:'var(--text2)', marginBottom:2 }}>
+                    <span style={{ fontWeight:600, color:'var(--text)' }}>{m.from}:</span> {m.text}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            {!n.resolved && (
+              <div style={{ display:'flex', gap:6, marginTop:10, flexWrap:'wrap' }}>
+                {(n.type === 'fault' || n.type === 'warning') && (
+                  <button onClick={e => { e.stopPropagation(); setResolveId(n.id); }}
+                    style={{ padding:'5px 10px', background:'rgba(30,158,94,0.12)', border:'1px solid rgba(30,158,94,0.3)', borderRadius:7, color:'#79D89F', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Outfit' }}>
+                    ✓ Clear Issue
+                  </button>
+                )}
+                {n.type === 'help_request' && (
+                  <a href={`tel:${p ? (window.YV_USERS ? YV_USERS.installers[0].phone : '') : ''}`}
+                    style={{ padding:'5px 12px', background:'#F08A8A', borderRadius:7, color:'white', fontSize:11, fontWeight:700, textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                    📞 Call Now
+                  </a>
+                )}
+                <button onClick={e => { e.stopPropagation(); setMsgId(n.id); }}
+                  style={{ padding:'5px 10px', background:'rgba(33,118,174,0.1)', border:'1px solid rgba(33,118,174,0.3)', borderRadius:7, color:'var(--blue)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'Outfit' }}>
+                  ✉ Message
+                </button>
+                {p && (
+                  <a href={`tel:${p.phone || ''}`}
+                    style={{ padding:'5px 10px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:7, color:'var(--text2)', fontSize:11, fontWeight:600, textDecoration:'none' }}>
+                    📞 Call
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Resolve inline form */}
+        {resolveId === n.id && (
+          <div onClick={e => e.stopPropagation()} style={{ marginTop:10, borderTop:'1px solid var(--border)', paddingTop:10 }}>
+            <div style={{ fontSize:11, color:'var(--text2)', marginBottom:6 }}>Resolution note (sent to customer):</div>
+            <textarea value={resolveNote} onChange={e => setResolveNote(e.target.value)}
+              placeholder="e.g. Replaced filter, COP restored to 3.8…"
+              rows={2} style={{ width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:8, padding:'7px 10px', color:'var(--text)', fontSize:12, fontFamily:'Outfit', outline:'none', resize:'none', marginBottom:8 }}/>
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={() => doResolve(n.id)} className="pill-btn pill-primary" style={{ flex:1, padding:'7px 0', fontSize:12 }}>Mark Resolved ✓</button>
+              <button onClick={() => setResolveId(null)} className="pill-btn pill-ghost" style={{ padding:'7px 12px', fontSize:12 }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {/* Message inline form */}
+        {msgId === n.id && (
+          <div onClick={e => e.stopPropagation()} style={{ marginTop:10, borderTop:'1px solid var(--border)', paddingTop:10 }}>
+            <div style={{ fontSize:11, color:'var(--text2)', marginBottom:6 }}>Message to customer:</div>
+            <textarea value={msgText} onChange={e => setMsgText(e.target.value)}
+              placeholder="Type a message…" rows={2}
+              style={{ width:'100%', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:8, padding:'7px 10px', color:'var(--text)', fontSize:12, fontFamily:'Outfit', outline:'none', resize:'none', marginBottom:8 }}/>
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={() => doMsg(n.id)} className="pill-btn pill-blue" style={{ flex:1, padding:'7px 0', fontSize:12 }}>Send ✉</button>
+              <button onClick={() => setMsgId(null)} className="pill-btn pill-ghost" style={{ padding:'7px 12px', fontSize:12 }}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div className="top-bar">
+        <div>
+          <div className="top-bar-title">Alerts</div>
+          <div className="top-bar-sub">Active issues & customer messages</div>
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:28, fontWeight:800, fontFamily:'var(--mono)', color: unresolved.length > 0 ? 'var(--red)' : 'var(--green)', letterSpacing:'-0.04em' }}>{unresolved.length}</div>
+          <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase' }}>open</div>
+        </div>
+      </div>
+
+      <div className="app-content" style={{ padding:'0 16px 90px' }}>
+        {unresolved.length === 0 && (
+          <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text3)' }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>✓</div>
+            <div style={{ fontSize:14, fontWeight:600, color:'var(--green)', marginBottom:4 }}>All clear</div>
+            <div style={{ fontSize:12 }}>No open alerts for your pumps</div>
+          </div>
+        )}
+
+        {unresolved.filter(n => n.type === 'help_request').map(n => <NotifCard key={n.id} n={n}/>)}
+        {unresolved.filter(n => n.type === 'fault').map(n => <NotifCard key={n.id} n={n}/>)}
+        {unresolved.filter(n => n.type === 'warning').map(n => <NotifCard key={n.id} n={n}/>)}
+        {unresolved.filter(n => !['help_request','fault','warning'].includes(n.type)).map(n => <NotifCard key={n.id} n={n}/>)}
+
+        {resolved.length > 0 && (
+          <>
+            <div style={{ fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em', margin:'16px 0 8px' }}>Resolved</div>
+            {resolved.slice(0, 5).map(n => <NotifCard key={n.id} n={n}/>)}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── History Screen ────────────────────────────────────────────
+const HistoryScreen = () => {
+  const completedJobs = [
+    { date:'2024-05-03', pump:'P012', customer:'Malan Danielsen', type:'Annual Service', cop:'3.1', duration:'2.5h' },
+    { date:'2024-05-02', pump:'P003', customer:'Bjarni Jacobsen',  type:'Filter Replace', cop:'3.4', duration:'1.0h' },
+    { date:'2024-04-28', pump:'P006', customer:'Heðin Magnusson', type:'Annual Service', cop:'3.9', duration:'2.0h' },
+    { date:'2024-04-25', pump:'P010', customer:'Dávur Joensen',   type:'Inspection',    cop:'3.6', duration:'0.5h' },
+    { date:'2024-04-22', pump:'P001', customer:'Jón Petersen',    type:'Annual Service', cop:'3.8', duration:'2.0h' },
+  ];
+  return (
+    <div>
+      <div className="top-bar">
+        <div>
+          <div className="top-bar-title">My History</div>
+          <div className="top-bar-sub">Completed service records</div>
+        </div>
+        <div style={{ textAlign:'right' }}>
+          <div style={{ fontSize:24, fontWeight:800, fontFamily:'var(--mono)', color:'var(--green)', letterSpacing:'-0.04em' }}>23</div>
+          <div style={{ fontSize:10, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase' }}>this month</div>
+        </div>
+      </div>
+      <div className="app-content" style={{ padding:'0 16px 90px' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:14 }}>
+          {[['Hours','47.5h','var(--blue)'],['Jobs','23','var(--green)'],['Avg COP','3.6','var(--yellow)']].map(([l,v,c]) => (
+            <div key={l} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'11px 10px', textAlign:'center' }}>
+              <div style={{ fontSize:18, fontWeight:800, fontFamily:'var(--mono)', color:c, letterSpacing:'-0.03em' }}>{v}</div>
+              <div style={{ fontSize:9, color:'var(--text3)', fontFamily:'var(--mono)', textTransform:'uppercase', marginTop:2 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+        {completedJobs.map((job,i) => (
+          <div key={i} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'12px 14px', marginBottom:8, display:'flex', gap:10, alignItems:'center' }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:'var(--green)', flexShrink:0, marginTop:2 }}></div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:600 }}>{job.customer}</div>
+              <div style={{ fontSize:11, color:'var(--text3)', fontFamily:'var(--mono)', marginTop:1 }}>{job.pump} · {job.type} · {job.date}</div>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <div style={{ fontSize:13, fontWeight:700, fontFamily:'var(--mono)', color:'var(--green)' }}>COP {job.cop}</div>
+              <div style={{ fontSize:10, color:'var(--text3)' }}>{job.duration}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+function ThemeToggle() {
+  const [mode, setMode] = React.useState(window.Theme ? Theme.getMode() : 'system');
+  const icons = { dark: '🌙', light: '☀️', system: '⚙' };
+  const cycle = () => { Theme.cycle(); setMode(Theme.getMode()); };
+  return (
+    <button onClick={cycle} title="Toggle theme" style={{
+      display:'flex', alignItems:'center', gap:4, padding:'3px 8px',
+      borderRadius:6, border:'1px solid var(--border)', background:'transparent',
+      color:'var(--text2)', fontSize:10, fontFamily:'var(--mono)', cursor:'pointer'
+    }}>
+      <span>{icons[mode]}</span>
+    </button>
+  );
+}
+
+function useLang() {
+  const [lang, setLang] = React.useState(I18n.getLang());
+  React.useEffect(() => {
+    const h = () => setLang(I18n.getLang());
+    document.addEventListener('yv:langchange', h);
+    return () => document.removeEventListener('yv:langchange', h);
+  }, []);
+  return lang;
+}
+
+function LangToggle() {
+  const lang = useLang();
+  const cycle = () => { const l=['en','da','sv']; I18n.setLang(l[(l.indexOf(lang)+1)%l.length]); };
+  return (
+    <button onClick={cycle} title="Switch language" style={{
+      display:'flex', alignItems:'center', padding:'3px 7px',
+      borderRadius:6, border:'1px solid var(--border)', background:'transparent',
+      color:'var(--text2)', fontSize:10, fontFamily:'var(--mono)', cursor:'pointer'
+    }}>{lang.toUpperCase()}</button>
+  );
+}
+
+// ── Main App ──────────────────────────────────────────────────
+function FieldApp() {
+  useLang();
+  const [screen, setScreen] = useState('today');
+  const [activeJob, setActiveJob] = useState(null);
+  const [isOnline, setIsOnline] = useState(true);
+  const [unread, setUnread] = useState(0);
+  const [onCall, setOnCall] = useState(window.YV_USERS?.getOnCallInstaller()?.id === 'I001');
+  const [userName, setUserName] = useState('');
+  const MY_INSTALLER = 'I001';
+
+  // Load real jobs from Supabase
+  const { jobs, loaded, updateStatus } = useJobs();
+
+  // Get current user's display name
+  useEffect(() => {
+    (async () => {
+      if (!window.YV_AUTH) return;
+      const u = await YV_AUTH.getUser();
+      if (u?.profile?.name) setUserName(u.profile.name);
+    })();
+  }, []);
+
+  useEffect(() => {
+    const t = setTimeout(() => setIsOnline(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Seed notifications from pump data on first load
+  useEffect(() => {
+    if (window.YV_NOTIFY) YV_NOTIFY.syncFromPumps(YV.pumps);
+  }, []);
+
+  // Keep unread count fresh
+  useEffect(() => {
+    const refresh = () => setUnread(window.YV_NOTIFY ? YV_NOTIFY.unreadCount(MY_INSTALLER) : 0);
+    refresh();
+    if (window.YV_NOTIFY) return YV_NOTIFY.onNew(refresh);
+  }, []);
+
+  const toggleOnCall = () => {
+    const next = !onCall;
+    setOnCall(next);
+    if (window.YV_USERS) YV_USERS.setOnCall(next ? MY_INSTALLER : 'I002');
+  };
+
+  const navItems = [
+    { id:'today', label:T('nav.home'), icon: active => (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="4" width="16" height="15" rx="2" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.5"/>
+        <path d="M7 2v4M15 2v4M3 9h16" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.4" strokeLinecap="round"/>
+        <rect x="7" y="12" width="3" height="3" rx="0.5" fill={active?'#6BC4D6':'#4a6480'} opacity="0.7"/>
+        <rect x="12" y="12" width="3" height="3" rx="0.5" fill={active?'#6BC4D6':'#4a6480'} opacity="0.4"/>
+      </svg>
+    )},
+    { id:'alerts', label:'Alerts', badge: unread, icon: active => (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 3a6 6 0 00-6 6v3l-1.5 2.5h15L17 12V9a6 6 0 00-6-6z" stroke={active||unread>0?'#F08A8A':'#4a6480'} strokeWidth="1.5" strokeLinejoin="round"/>
+        <path d="M9 16.5a2 2 0 004 0" stroke={active||unread>0?'#F08A8A':'#4a6480'} strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    )},
+    { id:'scan', label:T('field.scan'), icon: active => (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.5"/>
+        <rect x="13" y="2" width="7" height="7" rx="1.5" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.5"/>
+        <rect x="2" y="13" width="7" height="7" rx="1.5" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.5"/>
+        <rect x="14" y="14" width="2.5" height="2.5" fill={active?'#6BC4D6':'#4a6480'}/>
+        <rect x="18" y="14" width="2.5" height="2.5" fill={active?'#6BC4D6':'#4a6480'} opacity="0.6"/>
+        <rect x="14" y="18" width="2.5" height="2.5" fill={active?'#6BC4D6':'#4a6480'} opacity="0.6"/>
+        <rect x="18" y="18" width="2.5" height="2.5" fill={active?'#6BC4D6':'#4a6480'} opacity="0.4"/>
+      </svg>
+    )},
+    { id:'history', label:T('tab.history'), icon: active => (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="8" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.5"/>
+        <path d="M11 7v4l3 2" stroke={active?'#6BC4D6':'#4a6480'} strokeWidth="1.4" strokeLinecap="round"/>
+      </svg>
+    )},
+  ];
+
+  const showNav = !activeJob;
+
+  return (
+    <IOSDevice dark={true} width={390} height={844}>
+      <div className="shell">
+        {/* Sync / on-call bar */}
+        <div className="sync-bar">
+          <div className="sync-dot" style={{ background: isOnline ? '#79D89F' : '#F5C66B' }}></div>
+          <span className="sync-text">{isOnline ? 'Connected' : '⚠ Offline'}</span>
+          {/* On-call toggle */}
+          <button onClick={toggleOnCall} style={{
+            marginLeft:6, padding:'2px 8px', borderRadius:999, border:'none', cursor:'pointer',
+            fontSize:9, fontFamily:'var(--mono)', fontWeight:700, letterSpacing:'0.06em',
+            background: onCall ? 'rgba(30,158,94,0.2)' : 'var(--bg3)',
+            color: onCall ? '#79D89F' : 'var(--text3)',
+          }}>
+            {onCall ? '● ON-CALL' : '○ OFF-CALL'}
+          </button>
+          <span style={{ marginLeft:'auto', fontSize:10, fontFamily:'var(--mono)', color:'var(--text3)' }}>Pauli R.</span>
+          <LangToggle />
+          <ThemeToggle />
+        </div>
+
+        {/* Main content */}
+        {activeJob ? (
+          <ServiceWizard job={activeJob} onBack={() => setActiveJob(null)}/>
+        ) : (
+          <>
+            {screen === 'today'   && <TodayScreen onJobSelect={job => setActiveJob(job)} jobs={jobs} loaded={loaded} updateStatus={updateStatus} userName={userName}/>}
+            {screen === 'alerts'  && <AlertsScreen installerId={MY_INSTALLER}/>}
+            {screen === 'scan'    && <ScanScreen onFound={pump => setActiveJob({ pump, type:'Service', id:'WO-SCAN' })}/>}
+            {screen === 'history' && <HistoryScreen/>}
+          </>
+        )}
+
+        {/* Bottom nav */}
+        {showNav && (
+          <div className="bottom-nav">
+            {navItems.map(item => (
+              <div key={item.id} className={`nav-item ${screen===item.id?'active':''}`}
+                onClick={() => setScreen(item.id)}
+                style={{ position:'relative' }}>
+                <div style={{ width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+                  {item.icon(screen===item.id)}
+                  {item.badge > 0 && (
+                    <div style={{ position:'absolute', top:-4, right:-4, background:'#F08A8A', color:'white', fontSize:8, fontWeight:700, fontFamily:'var(--mono)', borderRadius:999, minWidth:14, height:14, display:'flex', alignItems:'center', justifyContent:'center', padding:'0 3px' }}>
+                      {item.badge}
+                    </div>
+                  )}
+                </div>
+                <div className="nav-item-label">{item.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </IOSDevice>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<FieldApp/>);
+</script>
+<script>
+function scaleDevice() {
+  const el = document.querySelector('.device-scaler');
+  if (!el) return;
+  const scale = Math.min(window.innerWidth / 438, window.innerHeight / 892, 1);
+  el.style.transform = `scale(${scale})`;
+}
+window.addEventListener('resize', scaleDevice);
+setTimeout(scaleDevice, 300);
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+# Environment variables — never commit these
+.env
+.env.local
+.env.production
+
+# Vercel build output
+.vercel/
+.output/
+
+# macOS
+.DS_Store
+
+# Uploaded files (user data)
+uploads/
+
+# Node (if any tooling is added later)
+node_modules/

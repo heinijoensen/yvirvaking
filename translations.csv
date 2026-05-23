@@ -1,0 +1,140 @@
+Key,English,Dansk,Svenska
+app.name,Yvirvaking,Yvirvaking,Yvirvaking
+app.tagline,Heat Pump Monitoring,Varmepumpeovervågning,Värmepumpsövervakning
+app.sub,Maria Poulsen CTC,Maria Poulsen CTC,Maria Poulsen CTC
+theme.dark,Dark,Mørk,Mörkt
+theme.light,Light,Lys,Ljust
+theme.system,System,System,System
+lang.en,English,English,English
+lang.da,Dansk,Dansk,Dansk
+lang.sv,Svenska,Svenska,Svenska
+nav.dashboard,Dashboard,Oversigt,Översikt
+nav.fleet,Fleet,Flåde,Flotta
+nav.workorders,Work Orders,Arbejdsordrer,Arbetsordrar
+nav.reports,Reports,Rapporter,Rapporter
+nav.customers,Customers,Kunder,Kunder
+nav.search,"Search pumps, customers…","Søg pumper, kunder…","Sök pumpar, kunder…"
+nav.back,← Back,← Tilbage,← Tillbaka
+nav.serviceview,Service View →,Servicevisning →,Servicevy →
+nav.home,Home,Hjem,Hem
+nav.energy,Energy,Energi,Energi
+nav.support,Support,Support,Support
+nav.more,More,Mere,Mer
+conn.connected,Connected,Forbundet,Ansluten
+conn.connecting,Connecting…,Forbinder…,Ansluter…
+conn.disconnected,Disconnected,Afbrudt,Frånkopplad
+conn.connect,Connect MyUplink,Forbind MyUplink,Anslut MyUplink
+conn.reconnect,Reconnect,Genopret forbindelse,Återanslut
+conn.disconnect,Disconnect,Afbryd,Koppla från
+conn.system,system,system,system
+conn.systems,systems,systemer,system
+conn.device,device,enhed,enhet
+conn.devices,devices,enheder,enheter
+conn.error,Connection error,Forbindelsesfejl,Anslutningsfel
+status.ok,Normal,Normal,Normal
+status.warning,Attention,Advarsel,Varning
+status.fault,Fault,Fejl,Fel
+status.connected,Connected,Forbundet,Ansluten
+status.offline,Offline,Offline,Offline
+status.live,live,live,live
+stat.total,Total Pumps,Pumper i alt,Totalt pumpar
+stat.faults,Faults,Fejl,Fel
+stat.warnings,Warnings,Advarsler,Varningar
+stat.avgcop,Avg COP,Gns. COP,Avg COP
+stat.uptime,Fleet Uptime,Flåde oppetid,Flottans drifttid
+stat.energytoday,Energy Today,Energi i dag,Energi idag
+map.allpumps,All pumps,Alle pumper,Alla pumpar
+map.pumpsshown,{n} pumps shown,{n} pumper vist,{n} pumpar visas
+alerts.title,Active Alerts,Aktive alarmer,Aktiva larm
+alerts.live,● live,● live,● live
+alerts.mock,mock,mock,mock
+alerts.delay,{n}min delay,{n}min forsinkelse,{n}min fördröjning
+alerts.delayexplain,Faults visible to company {n} min before the customer app is notified. Adjust window:,Fejl synlige for virksomheden {n} min. før kunden underrettes. Juster vindue:,Fel synliga för företaget {n} min innan kunden notifieras. Justera fönster:
+alerts.window.title,Intervention window open,Interventionsvindue åbent,Ingrepp möjligt
+alerts.window.sub,{n} alert not yet visible to customer,{n} alarm endnu ikke synlig for kunden,{n} larm ännu inte synligt för kund
+alerts.window.sub_plural,{n} alerts not yet visible to customer,{n} alarmer endnu ikke synlige for kunden,{n} larm ännu inte synliga för kund
+alerts.notified,Customer notified,Kunden underrettet,Kund notifierad
+alerts.notifiedin,Customer notified in ~{n}m,Kunden underrettes om ~{n}m,Kund notifieras om ~{n}m
+alerts.suppress,Suppress →,Undertryk →,Tysta →
+chart.title,Fleet Energy (kWh/mo) + Avg COP,Flådeenergi (kWh/md) + Gns. COP,Flottenenergi (kWh/mån) + Avg COP
+recent.title,Recently Installed,Nyligt installeret,Nyligen installerade
+tab.overview,Overview,Oversigt,Översikt
+tab.diagnostics,Diagnostics,Diagnostik,Diagnostik
+tab.history,History,Historik,Historik
+tab.report,Service Report,Servicerapport,Servicerapport
+tab.documents,Documents,Dokumenter,Dokument
+tab.settings,Settings,Indstillinger,Inställningar
+tab.customer,Customer,Kunde,Kund
+tab.notes,Notes,Noter,Anteckningar
+report.sendemail,✉ Send Status Email,✉ Send statusmail,✉ Skicka statusmail
+report.print,🖨 Print / PDF,🖨 Udskriv / PDF,🖨 Skriv ut / PDF
+report.exportbc,⬇ Export BC JSON,⬇ Eksporter BC JSON,⬇ Exportera BC JSON
+report.hours,Hours,Timer,Timmar
+report.materials,Materials,Materialer,Material
+report.status,Status,Status,Status
+field.jobs,Jobs,Opgaver,Jobb
+field.scan,Scan,Scan,Skanna
+field.checklist,Checklist,Tjekliste,Checklista
+field.sync,Sync,Synkroniser,Synkronisera
+field.syncing,Syncing…,Synkroniserer…,Synkroniserar…
+field.synced,All synced,Alt synkroniseret,Allt synkroniserat
+home.status.ok,Everything is fine,Alt er i orden,Allt är bra
+home.status.fault,Action needed,Handling krævet,Åtgärd krävs
+home.status.warning,Check recommended,Kontrol anbefalet,Kontroll rekommenderas
+home.indoor,Indoor,Indendørs,Inomhus
+home.outdoor,Outside,Udendørs,Utomhus
+home.hotwater,Hot water,Varmt vand,Varmvatten
+home.target,Target temperature,Måltemperatur,Måltemperatur
+home.mode.comfort,🏠 Normal,🏠 Normal,🏠 Normal
+home.mode.eco,🌿 Energy saver,🌿 Energibesparende,🌿 Energisparande
+home.mode.holiday,✈️ Away,✈️ Væk,✈️ Borta
+home.boost.title,Hot water now,Varmt vand nu,Varmvatten nu
+home.boost.sub,Tap to heat tank to 60°C — ready in ~45 min,Tryk for at varme beholder til 60°C — klar om ca. 45 min,Tryck för att värma tank till 60°C — klar om ~45 min
+home.boost.btn,Start,Start,Starta
+home.boost.active,Heating water…,Varmer vand…,Värmer vatten…
+home.boost.activesub,Tank heating to 60°C. Ready in ~45 min.,Beholder varmes til 60°C. Klar om ca. 45 min.,Tank värms till 60°C. Klar om ~45 min.
+energy.week,Week,Uge,Vecka
+energy.month,Month,Måned,Månad
+energy.year,Year,År,År
+energy.thisweek,This week,Denne uge,Den här veckan
+energy.thismonth,April 2024,April 2024,April 2024
+energy.lastyear,Last 12 months,Seneste 12 måneder,Senaste 12 månaderna
+energy.cop.title,Good Efficiency,God effektivitet,Bra effektivitet
+energy.cop.desc,Your pump produces {cop}x more heat than electricity used — above the Faroe Islands average of 3.1.,Din pumpe producerer {cop}x mere varme end den brugte el — over Færøernes gennemsnit på 3,1.,Din pump producerar {cop}x mer värme än el som används — över Färöarnas genomsnitt på 3,1.
+energy.details,Details & Reports,Detaljer og rapporter,Detaljer och rapporter
+energy.details.show,▼ Show,▼ Vis,▼ Visa
+energy.details.hide,▲ Hide,▲ Skjul,▲ Dölj
+energy.compare,How do you compare?,Hvordan klarer du dig?,Hur gör du jämfört?
+energy.compare.sub,Anonymous comparison with similar homes,Anonym sammenligning med lignende hjem,Anonym jämförelse med liknande hem
+energy.compare.footnote,Based on 15 CTC pumps in the Faroe Islands. Data anonymised.,Baseret på 15 CTC-pumper på Færøerne. Data anonymiseret.,Baserat på 15 CTC-pumpar på Färöarna. Data anonymiserade.
+energy.report.title,Download Report,Download rapport,Ladda ner rapport
+energy.report.from,FROM,FRA,FRÅN
+energy.report.to,TO,TIL,TILL
+energy.report.preview,Preview Report,Forhåndsvis rapport,Förhandsgranska rapport
+energy.report.pdf,PDF ↓,PDF ↓,PDF ↓
+energy.ai.title,AI Analysis,AI-analyse,AI-analys
+energy.ai.btn,Analyse this period ✦,Analysér denne periode ✦,Analysera denna period ✦
+energy.ai.loading,Analysing your data…,Analyserer dine data…,Analyserar dina data…
+energy.ai.again,Analyse again ↺,Analysér igen ↺,Analysera igen ↺
+energy.tip.head,💡 Energy Tip,💡 Energitip,💡 Energitips
+energy.tip.body,Lowering your setpoint by 1°C at night can reduce energy use by up to 8%. Try the Schedule feature to set it automatically.,At sænke din indstilling med 1°C om natten kan reducere energiforbruget med op til 8%. Prøv planlægningsfunktionen for at indstille det automatisk.,Att sänka din inställning med 1°C på natten kan minska energianvändningen med upp till 8%. Prova Schema-funktionen för att ställa in det automatiskt.
+support.online,Online — responds in minutes,Online — svarer inden for minutter,Online — svarar inom minuter
+support.call,Call us,Ring til os,Ring oss
+support.placeholder,Message support…,Skriv til support…,Meddelande till support…
+more.schedule,Schedule,Planlægning,Schema
+more.schedule.sub,Set temperature by time of day,Indstil temperatur efter tidspunkt,Ställ in temperatur efter tid
+more.bookservice,Book Service,Bestil service,Boka service
+more.bookservice.sub,Request a technician visit,Anmod om teknikerbesøg,Begär ett teknikerbesök
+more.history,Service History,Servicehistorik,Servicehistorik
+more.history.sub,Past visits and reports,Tidligere besøg og rapporter,Tidigare besök och rapporter
+more.documents,Documents,Dokumenter,Dokument
+more.documents.sub,"Warranty, manuals, invoices","Garanti, manualer, fakturaer","Garanti, manualer, fakturor"
+more.notifications,Notifications,Notifikationer,Aviseringar
+more.notifications.sub,Alerts and reminders,Alarmer og påmindelser,Larm och påminnelser
+more.winter,Winter Mode,Vintertilstand,Vinterläge
+more.winter.sub,Cold weather settings,Koltvejrsindstillinger,Kallt väderinställningar
+more.annualreport,Annual Report,Årsrapport,Årsrapport
+more.annualreport.sub,Download energy report,Download energirapport,Ladda ner energirapport
+more.settings,Settings,Indstillinger,Inställningar
+more.settings.sub,App preferences,App-præferencer,Appinställningar
+more.switchdashboard,← Switch to Company Dashboard,← Skift til firmaoversigt,← Byt till företagsdashboard

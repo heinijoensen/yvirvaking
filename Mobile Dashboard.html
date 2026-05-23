@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yvirvaking">
+<meta name="theme-color" content="#0d1520">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<title>Yvirvaking — Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="theme.js"></script>
+<script src="shared-data.js"></script>
+<script src="config.js"></script>
+<script src="supabase.js"></script>
+<script src="myuplink.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; min-height: 100%;
+  background: #0d1520; color: #eef2f7;
+  font-family: 'Outfit', system-ui, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+#root { width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
+* { -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { display: none; }
+input { -webkit-appearance: none; }
+</style>
+</head>
+<body>
+<div id="auth-gate" style="position:fixed;inset:0;background:#0d1520;z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;"><svg width="28" height="28" viewBox="0 0 28 28" style="animation:ag-spin 0.9s linear infinite"><circle cx="14" cy="14" r="11" stroke="rgba(238,242,247,0.1)" stroke-width="3" fill="none"/><path d="M14 3 A11 11 0 0 1 25 14" stroke="#c0392b" stroke-width="3" stroke-linecap="round" fill="none"/></svg><div style="color:rgba(238,242,247,0.35);font-size:13px;font-family:Outfit,sans-serif;font-weight:500;letter-spacing:0.02em">Checking session…</div><style>@keyframes ag-spin{to{transform:rotate(360deg)}}</style></div>
+<script>
+(async function(){
+  if(!window.YV_AUTH){document.getElementById('auth-gate').style.display='none';return;}
+  const u=await YV_AUTH.requireRole('admin','installer');
+  if(u){document.getElementById('auth-gate').style.display='none';const _ld=window.YV?.loadFromSupabase||window.YV_loadFromSupabase;if(_ld)_ld();}
+})();
+</script>
+<div id="root"></div>
+
+<!-- Leaflet must load before React so window.L is available on mount -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── Design tokens ────────────────────────────────────────────
+const C = {
+  bg:      '#0d1520',
+  surface: '#142031',
+  surface2:'#1a2940',
+  line:    'rgba(255,255,255,0.07)',
+  text:    '#eef2f7',
+  muted:   'rgba(238,242,247,0.55)',
+  faint:   'rgba(238,242,247,0.30)',
+  red:     '#c0392b',
+  green:   '#1e9e5e',
+  blue:    '#2176ae',
+  yellow:  '#e8a020',
+};
+
+const sc = { ok: C.green, warning: C.yellow, fault: C.red };
+
+const _cfg = window.YVIRVAKING_CONFIG?.company || {};
+const ADMIN_NAME = _cfg.adminName || 'Maria';
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Góðan morgun';
+  if (h < 18) return 'Góðan dag';
+  return 'Gott kvøld';
+}
+
+// ── Icons ────────────────────────────────────────────────────
+const Ico = {
+  pump:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="12" r="3.5"/><path d="M12 8.5v-2M12 17.5v-2"/></svg>,
+  fault:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2 1 22h22L12 2z"/><path d="M12 9v5"/><circle cx="12" cy="17.5" r="0.5" fill="currentColor"/></svg>,
+  warn:   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.5" r="0.5" fill="currentColor"/></svg>,
+  cop:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17 9 11l4 4 8-8"/><path d="M14 4h7v7"/></svg>,
+  bolt:   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>,
+  uptime: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 1 9 9"/><path d="M3 7v5h5"/></svg>,
+  bell:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  pin:    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg>,
+  arrow:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  search: <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="10" cy="10" r="6" stroke="currentColor" strokeWidth="1.6"/><path d="M15 15l4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg>,
+};
+
+// Nav icons (separate so they can receive active color via parent color)
+const NavIco = {
+  overview:  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>,
+  alerts:    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>,
+  customers: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5.5 5.5 0 0 1 5.5 5.5"/></svg>,
+  service:   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.5 5.2L3 17.7 6.3 21l6.2-6.2a4 4 0 0 0 5.2-5.5l-2.6 2.6-2.4-2.4 2.6-2.6z"/></svg>,
+};
+
+// ── Wordmark ─────────────────────────────────────────────────
+function Wordmark() {
+  const firstName = ADMIN_NAME.split(' ')[0];
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="13" stroke={C.red} strokeWidth="1.5"/>
+        <path d="M8 16.5 Q 14 9, 20 16.5" stroke={C.red} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+        <path d="M8 12.5 Q 14 19, 20 12.5" stroke="#eef2f7" strokeWidth="1.8" fill="none" strokeLinecap="round" opacity="0.85"/>
+      </svg>
+      <div style={{ display:'flex', flexDirection:'column', lineHeight:1 }}>
+        <div style={{ fontSize:17, fontWeight:600, letterSpacing:'-0.01em', color:C.text }}>Yvirvaking</div>
+        <div style={{ fontSize:10.5, color:C.muted, marginTop:3, letterSpacing:'0.04em' }}>{firstName} · Fleet</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Top bar ──────────────────────────────────────────────────
+function TopBar({ alertCount, onBellClick }) {
+  return (
+    <div style={{
+      position:'sticky', top:0, zIndex:20,
+      background:'rgba(13,21,32,0.88)',
+      backdropFilter:'saturate(140%) blur(14px)',
+      WebkitBackdropFilter:'saturate(140%) blur(14px)',
+      borderBottom:`1px solid ${C.line}`,
+      paddingTop:'max(env(safe-area-inset-top, 44px), 44px)',
+      paddingBottom:12, paddingLeft:18, paddingRight:18,
+      display:'flex', alignItems:'center', justifyContent:'space-between',
+      flexShrink:0,
+    }}>
+      <Wordmark/>
+      <button onClick={onBellClick} style={{
+        position:'relative', width:38, height:38, borderRadius:12,
+        background:C.surface, border:`1px solid ${C.line}`,
+        display:'flex', alignItems:'center', justifyContent:'center',
+        cursor:'pointer', padding:0, color:C.text,
+      }}>
+        {Ico.bell}
+        {alertCount > 0 && (
+          <span style={{
+            position:'absolute', top:6, right:6,
+            minWidth:16, height:16, padding:'0 4px',
+            borderRadius:999, background:C.red,
+            color:'#fff', fontSize:9.5, fontWeight:700,
+            display:'flex', alignItems:'center', justifyContent:'center',
+            border:`2px solid ${C.bg}`, boxSizing:'content-box',
+          }}>{alertCount}</span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+// ── Bottom nav ───────────────────────────────────────────────
+const NAV_TABS = ['overview','alerts','customers','service'];
+const NAV_LABELS = { overview:'Overview', alerts:'Alerts', customers:'Customers', service:'Service' };
+
+function BottomNav({ active, onChange, alertCount }) {
+  return (
+    <div style={{
+      position:'sticky', bottom:0, zIndex:20,
+      background:'rgba(13,21,32,0.92)',
+      backdropFilter:'saturate(140%) blur(14px)',
+      WebkitBackdropFilter:'saturate(140%) blur(14px)',
+      borderTop:`1px solid ${C.line}`,
+      paddingTop:8, paddingLeft:8, paddingRight:8,
+      paddingBottom:'max(env(safe-area-inset-bottom, 20px), 20px)',
+      display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:4,
+      flexShrink:0,
+    }}>
+      {NAV_TABS.map(id => {
+        const isActive = id === active;
+        const badge = id === 'alerts' && alertCount > 0 ? alertCount : null;
+        return (
+          <button key={id} onClick={() => onChange(id)} style={{
+            background:'none', border:'none', cursor:'pointer', padding:'8px 4px 6px',
+            display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+            color: isActive ? C.text : C.faint,
+            fontFamily:'inherit', borderRadius:10, position:'relative',
+          }}>
+            <div style={{ position:'relative' }}>
+              {NavIco[id]}
+              {badge && (
+                <span style={{
+                  position:'absolute', top:-3, right:-7,
+                  minWidth:14, height:14, padding:'0 3px',
+                  background:C.red, color:'#fff', fontSize:9, fontWeight:700,
+                  borderRadius:999, display:'flex', alignItems:'center', justifyContent:'center',
+                  border:`2px solid ${C.bg}`, boxSizing:'content-box',
+                }}>{badge}</span>
+              )}
+            </div>
+            <div style={{ fontSize:10.5, fontWeight: isActive ? 600 : 500, letterSpacing:'0.01em' }}>
+              {NAV_LABELS[id]}
+            </div>
+            {isActive && (
+              <div style={{
+                position:'absolute', bottom:26, width:18, height:2.5,
+                background:C.red, borderRadius:999,
+              }}/>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Stat card ────────────────────────────────────────────────
+function StatCard({ label, value, sub, accent, icon }) {
+  return (
+    <div style={{
+      background:C.surface, border:`1px solid ${C.line}`,
+      borderRadius:16, padding:'14px 14px 13px',
+      display:'flex', flexDirection:'column', gap:10, minHeight:102,
+    }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
+        <div style={{
+          width:30, height:30, borderRadius:9,
+          background: accent ? `${accent}22` : 'rgba(255,255,255,0.05)',
+          color: accent || C.muted,
+          display:'flex', alignItems:'center', justifyContent:'center',
+        }}>{icon}</div>
+      </div>
+      <div>
+        <div style={{
+          fontSize:26, fontWeight:600, color:C.text,
+          letterSpacing:'-0.02em', lineHeight:1, fontVariantNumeric:'tabular-nums',
+        }}>{value}</div>
+        <div style={{ display:'flex', flexDirection:'column', gap:2, marginTop:6 }}>
+          <div style={{ fontSize:11.5, color:C.muted, letterSpacing:'0.02em', whiteSpace:'nowrap' }}>{label}</div>
+          {sub && <div style={{ fontSize:10.5, color: accent || C.faint, fontWeight:600, whiteSpace:'nowrap' }}>{sub}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatGrid() {
+  const s = YV.stats;
+  const faults   = YV.pumps.filter(p => p.status === 'fault').length;
+  const warnings = YV.pumps.filter(p => p.status === 'warning').length;
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+      <StatCard label="Total pumps"   value={s.total}            sub="all connected"                     accent={C.blue}                              icon={Ico.pump}  />
+      <StatCard label="Active faults" value={faults}             sub={faults   > 0 ? 'needs attention' : 'all clear'} accent={faults   > 0 ? C.red    : C.green} icon={Ico.fault} />
+      <StatCard label="Warnings"      value={warnings}           sub={warnings > 0 ? 'monitoring'       : 'all clear'} accent={warnings > 0 ? C.yellow : C.green} icon={Ico.warn}  />
+      <StatCard label="Avg COP"       value={s.avg_cop.toFixed(1)} sub="efficiency"                     accent={C.green}                             icon={Ico.cop}   />
+    </div>
+  );
+}
+
+// ── Uptime + Energy panel ────────────────────────────────────
+function UptimeEnergy() {
+  const s = YV.stats;
+  const online = s.total - s.faults;
+  return (
+    <div style={{
+      background:C.surface, border:`1px solid ${C.line}`,
+      borderRadius:16, padding:14,
+      display:'grid', gridTemplateColumns:'1fr 1px 1fr', gap:12, alignItems:'stretch',
+    }}>
+      {/* Fleet uptime */}
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, color:C.muted, fontSize:10.5, letterSpacing:'0.06em', textTransform:'uppercase' }}>
+          <span style={{ color:C.green, display:'flex' }}>{Ico.uptime}</span>
+          Fleet uptime
+        </div>
+        <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+          <span style={{ fontSize:28, fontWeight:600, color:C.text, letterSpacing:'-0.02em', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>{s.uptime_pct}</span>
+          <span style={{ fontSize:14, color:C.muted, fontWeight:500 }}>%</span>
+        </div>
+        <div style={{ height:5, background:'rgba(255,255,255,0.06)', borderRadius:999, overflow:'hidden', marginTop:2 }}>
+          <div style={{ height:'100%', width:`${s.uptime_pct}%`, background:C.green, borderRadius:999 }}/>
+        </div>
+        <div style={{ fontSize:10.5, color:C.faint }}>{online} of {s.total} online</div>
+      </div>
+
+      <div style={{ background:C.line }}/>
+
+      {/* Energy today */}
+      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6, color:C.muted, fontSize:10.5, letterSpacing:'0.06em', textTransform:'uppercase' }}>
+          <span style={{ color:C.yellow, display:'flex' }}>{Ico.bolt}</span>
+          Energy today
+        </div>
+        <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
+          <span style={{ fontSize:28, fontWeight:600, color:C.text, letterSpacing:'-0.02em', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>{s.energy_today_kwh}</span>
+          <span style={{ fontSize:14, color:C.muted, fontWeight:500 }}>kWh</span>
+        </div>
+        {/* Sparkline from energy trend */}
+        <svg width="100%" height="22" viewBox="0 0 120 22" preserveAspectRatio="none" style={{ marginTop:2 }}>
+          <defs>
+            <linearGradient id="spg" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor={C.yellow} stopOpacity="0.45"/>
+              <stop offset="100%" stopColor={C.yellow} stopOpacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 18 L17 15 L34 19 L51 12 L68 14 L85 8 L102 11 L120 6 L120 22 L0 22 Z" fill="url(#spg)"/>
+          <path d="M0 18 L17 15 L34 19 L51 12 L68 14 L85 8 L102 11 L120 6" fill="none" stroke={C.yellow} strokeWidth="1.4" strokeLinejoin="round"/>
+        </svg>
+        <div style={{ fontSize:10.5, color:C.green, fontWeight:600 }}>
+          {YV.energyTrend && YV.energyTrend.length >= 2
+            ? `${YV.energyTrend[YV.energyTrend.length-1].avg_cop > YV.energyTrend[YV.energyTrend.length-2].avg_cop ? '↑' : '↓'} COP trend this month`
+            : 'Fleet data'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Fleet Map ────────────────────────────────────────────────
+function injectMapStyles() {
+  if (document.getElementById('yvk-map-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'yvk-map-styles';
+  s.textContent = `
+    .yvk-map .leaflet-container { background: #0a1422; font-family: "Outfit", system-ui, sans-serif; }
+    .yvk-map .leaflet-control-attribution {
+      background: rgba(13,21,32,0.75) !important; color: rgba(238,242,247,0.4) !important;
+      font-size: 9px !important; padding: 1px 6px !important;
+      border-radius: 6px 0 0 0; backdrop-filter: blur(6px);
+    }
+    .yvk-map .leaflet-control-attribution a { color: rgba(238,242,247,0.6) !important; }
+    .yvk-map .leaflet-marker-icon { background: none; border: none; }
+    .pmp {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid #0d1520; box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      position: relative; transition: transform 0.15s;
+    }
+    .pmp::after {
+      content: ''; position: absolute; left: 2px; top: 1.5px;
+      width: 3px; height: 3px; background: rgba(255,255,255,0.7); border-radius: 50%;
+    }
+    .pmp-ok      { background: #1e9e5e; }
+    .pmp-warning { background: #e8a020; }
+    .pmp-fault   { background: #c0392b; }
+    .pmp-fault::before {
+      content: ''; position: absolute; left: 50%; top: 50%;
+      width: 12px; height: 12px; margin-left: -6px; margin-top: -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #c0392baa 0%, #c0392b00 65%);
+      animation: pmp-pulse 2.2s ease-out infinite; pointer-events: none;
+    }
+    .pmp-sel { transform: scale(1.4); box-shadow: 0 0 0 2px #eef2f7, 0 2px 6px rgba(0,0,0,0.7); }
+    @keyframes pmp-pulse {
+      0%   { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(3.4); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(s);
+}
+
+function LegendDot({ color, n }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:4 }}>
+      <span style={{ width:7, height:7, borderRadius:999, background:color, display:'inline-block' }}/>
+      <span style={{ color:'rgba(238,242,247,0.78)', fontWeight:600 }}>{n}</span>
+    </div>
+  );
+}
+
+function FleetMap() {
+  const containerRef = useRef(null);
+  const mapRef       = useRef(null);
+  const markersRef   = useRef({});
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    injectMapStyles();
+    if (!containerRef.current || mapRef.current || !window.L) return;
+    const L = window.L;
+
+    const map = L.map(containerRef.current, {
+      center: [62.00, -6.88], zoom: 9,
+      zoomControl: false, attributionControl: true,
+      scrollWheelZoom: false, doubleClickZoom: false,
+      dragging: true, tap: true,
+      maxBounds: [[61.20, -7.90], [62.60, -5.80]],
+      maxBoundsViscosity: 0.9, minZoom: 8, maxZoom: 13,
+    });
+    mapRef.current = map;
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd', maxZoom: 19, attribution: '&copy; OSM &copy; CARTO',
+    }).addTo(map);
+
+    const statusZ = { fault: 3, warning: 2, ok: 1 };
+    [...YV.pumps]
+      .sort((a,b) => (statusZ[a.status]||1) - (statusZ[b.status]||1))
+      .forEach(p => {
+        if (!p.lat || !p.lng) return;
+        const icon = L.divIcon({
+          html: `<div class="pmp pmp-${p.status}" data-pid="${p.id}"></div>`,
+          className: '', iconSize:[16,16], iconAnchor:[8,8],
+        });
+        const m = L.marker([p.lat, p.lng], {
+          icon, riseOnHover: true, zIndexOffset: (statusZ[p.status]||1) * 100,
+        }).addTo(map);
+        m.on('click', () => setSelected(prev => prev === p.id ? null : p.id));
+        markersRef.current[p.id] = m;
+      });
+
+    map.fitBounds([[61.45, -7.75], [62.40, -6.45]], { padding:[8,8] });
+
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  useEffect(() => {
+    Object.entries(markersRef.current).forEach(([id, m]) => {
+      const el = m.getElement()?.querySelector('.pmp');
+      if (el) el.classList.toggle('pmp-sel', id === selected);
+    });
+    if (selected && mapRef.current) {
+      const p = YV.pumps.find(p => p.id === selected);
+      if (p?.lat && p?.lng) mapRef.current.panTo([p.lat, p.lng], { animate:true, duration:0.4 });
+    }
+  }, [selected]);
+
+  const sel = selected ? YV.pumps.find(p => p.id === selected) : null;
+  const counts = {
+    fault:   YV.pumps.filter(p => p.status === 'fault').length,
+    warning: YV.pumps.filter(p => p.status === 'warning').length,
+    ok:      YV.pumps.filter(p => p.status === 'ok').length,
+  };
+
+  return (
+    <div>
+      {/* Section header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', padding:'0 4px', marginBottom:10 }}>
+        <div style={{ fontSize:14, fontWeight:600, color:C.text, letterSpacing:'-0.01em', whiteSpace:'nowrap' }}>
+          Fleet locations
+          <span style={{ marginLeft:8, fontSize:11, color:C.muted, fontWeight:500 }}>Faroe Islands</span>
+        </div>
+        <div style={{ display:'flex', gap:8, fontSize:10.5, fontVariantNumeric:'tabular-nums', whiteSpace:'nowrap', flexShrink:0 }}>
+          {counts.fault   > 0 && <LegendDot color={C.red}    n={counts.fault}   />}
+          {counts.warning > 0 && <LegendDot color={C.yellow} n={counts.warning} />}
+          <LegendDot color={C.green} n={counts.ok} />
+        </div>
+      </div>
+
+      {/* Map card */}
+      <div style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:16, overflow:'hidden', position:'relative' }}>
+        <div ref={containerRef} className="yvk-map" style={{ width:'100%', height:280, background:'#0a1422' }}/>
+
+        {/* Inner vignette */}
+        <div style={{
+          pointerEvents:'none', position:'absolute', inset:0, borderRadius:16,
+          boxShadow:'inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 -60px 60px -40px rgba(13,21,32,0.7)',
+        }}/>
+
+        {/* Floating pump count pill */}
+        <div style={{
+          position:'absolute', top:10, left:10, zIndex:500,
+          padding:'5px 10px',
+          background:'rgba(13,21,32,0.72)', backdropFilter:'blur(10px)', WebkitBackdropFilter:'blur(10px)',
+          border:`1px solid ${C.line}`, borderRadius:999,
+          fontSize:11, color:C.muted, fontWeight:500,
+          display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap',
+        }}>
+          <span style={{ color:C.text, opacity:0.7, display:'flex' }}>{Ico.pin}</span>
+          <span style={{ color:C.text, opacity:0.85 }}>{YV.pumps.filter(p=>p.lat).length} pumps · Faroes</span>
+        </div>
+
+        {/* Selected pump callout */}
+        {sel && (
+          <div style={{
+            position:'absolute', left:10, right:10, bottom:10, zIndex:500,
+            background:'rgba(13,21,32,0.94)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)',
+            border:`1px solid ${C.line}`, borderRadius:12,
+            padding:'10px 12px', display:'flex', gap:10, alignItems:'center',
+            boxShadow:'0 8px 24px rgba(0,0,0,0.5)',
+          }}>
+            <div style={{ width:8, height:8, borderRadius:999, background:sc[sel.status], flexShrink:0, boxShadow:`0 0 0 4px ${sc[sel.status]}22` }}/>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', gap:8 }}>
+                <div style={{ fontSize:12.5, fontWeight:600, color:C.text, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sel.model}</div>
+                {sel.status !== 'ok' && (
+                  <div style={{ fontSize:9.5, color:sc[sel.status], padding:'1px 5px', background:`${sc[sel.status]}1f`, borderRadius:4, fontFamily:'ui-monospace,monospace', flexShrink:0, whiteSpace:'nowrap' }}>
+                    {sel.status.toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize:11, color:C.muted, marginTop:2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                {sel.customer} · {sel.address}
+              </div>
+            </div>
+            <button onClick={() => setSelected(null)} style={{ background:'none', border:'none', color:C.faint, cursor:'pointer', padding:4, fontSize:16, lineHeight:1, fontFamily:'inherit' }}>×</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Alert row ────────────────────────────────────────────────
+function AlertRow({ p, isLast }) {
+  const color = p.status === 'fault' ? C.red : C.yellow;
+  return (
+    <div style={{
+      display:'flex', gap:12, padding:'13px 14px',
+      borderBottom: isLast ? 'none' : `1px solid ${C.line}`,
+      alignItems:'flex-start',
+    }}>
+      <div style={{ marginTop:5, width:8, height:8, borderRadius:999, background:color, flexShrink:0, boxShadow:`0 0 0 4px ${color}22` }}/>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:8, alignItems:'baseline' }}>
+          <div style={{ fontSize:13.5, fontWeight:600, color:C.text, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1 }}>{p.model}</div>
+          <div style={{ fontSize:10.5, color:C.faint, flexShrink:0, whiteSpace:'nowrap' }}>{p.last_seen}</div>
+        </div>
+        {p.alerts[0] && (
+          <div style={{ fontSize:12, color, fontWeight:500, marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.alerts[0]}</div>
+        )}
+        <div style={{ fontSize:11.5, color:C.muted, marginTop:5, display:'flex', alignItems:'center', gap:4, overflow:'hidden', whiteSpace:'nowrap' }}>
+          <span style={{ display:'flex', flexShrink:0, opacity:0.6 }}>{Ico.pin}</span>
+          <span style={{ color:C.text, opacity:0.75, flexShrink:0 }}>{p.customer}</span>
+          <span style={{ color:C.faint, flexShrink:0 }}>·</span>
+          <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{p.address}</span>
+        </div>
+        {(p.phone || p.email) && (
+          <div style={{ display:'flex', gap:6, marginTop:9 }}>
+            {p.phone && (
+              <a href={`tel:${p.phone.replace(/\s/g,'')}`} style={{ fontSize:11, fontWeight:600, color:C.green, background:`${C.green}12`, border:`1px solid ${C.green}28`, borderRadius:7, padding:'5px 12px', textDecoration:'none' }}>
+                Call
+              </a>
+            )}
+            {p.email && (
+              <a href={`mailto:${p.email}`} style={{ fontSize:11, fontWeight:600, color:C.blue, background:`${C.blue}12`, border:`1px solid ${C.blue}28`, borderRadius:7, padding:'5px 12px', textDecoration:'none' }}>
+                Email
+              </a>
+            )}
+            <a href={`Tier2%20Service.html?pump=${p.id}`} style={{ fontSize:11, fontWeight:600, color:C.muted, background:'rgba(255,255,255,0.04)', border:`1px solid ${C.line}`, borderRadius:7, padding:'5px 12px', textDecoration:'none', marginLeft:'auto' }}>
+              Service →
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Overview screen ──────────────────────────────────────────
+function OverviewScreen({ onViewAlerts }) {
+  const alertPumps = YV.pumps.filter(p => p.status !== 'ok').sort((a,b) => a.status === 'fault' ? -1 : 1);
+  const faultCount = alertPumps.length;
+  const firstName  = ADMIN_NAME.split(' ')[0];
+  const dateStr    = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'16px 14px 14px', display:'flex', flexDirection:'column', gap:16 }}>
+      {/* Greeting */}
+      <div style={{ padding:'4px 4px 0' }}>
+        <div style={{ fontSize:12.5, color:C.muted, letterSpacing:'0.02em' }}>{dateStr}</div>
+        <div style={{ fontSize:22, fontWeight:600, color:C.text, marginTop:4, letterSpacing:'-0.02em' }}>
+          {getGreeting()}, {firstName}.
+        </div>
+        <div style={{ fontSize:12.5, color:C.muted, marginTop:4, lineHeight:1.5 }}>
+          {faultCount === 0
+            ? 'All pumps running normally.'
+            : faultCount === 1
+            ? '1 pump needs attention.'
+            : `${faultCount} pumps need attention.`}
+        </div>
+      </div>
+
+      <StatGrid/>
+      <UptimeEnergy/>
+      <FleetMap/>
+
+      {/* Alerts preview */}
+      {alertPumps.length > 0 ? (
+        <div>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', padding:'0 4px', marginBottom:10 }}>
+            <div style={{ fontSize:14, fontWeight:600, color:C.text, letterSpacing:'-0.01em', whiteSpace:'nowrap' }}>
+              Active alerts
+              <span style={{ marginLeft:8, fontSize:11, color:C.red, fontWeight:600, background:`${C.red}22`, padding:'2px 7px', borderRadius:999, verticalAlign:'2px' }}>{alertPumps.length}</span>
+            </div>
+            <button onClick={onViewAlerts} style={{ fontSize:12, color:C.blue, background:'none', border:'none', cursor:'pointer', fontFamily:'inherit', fontWeight:500, whiteSpace:'nowrap' }}>
+              View all →
+            </button>
+          </div>
+          <div style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:16, overflow:'hidden' }}>
+            {alertPumps.map((p,i) => <AlertRow key={p.id} p={p} isLast={i===alertPumps.length-1}/>)}
+          </div>
+        </div>
+      ) : (
+        <div style={{ background:`${C.green}0a`, border:`1px solid ${C.green}25`, borderRadius:16, padding:'20px', textAlign:'center' }}>
+          <div style={{ fontSize:22, marginBottom:6 }}>✓</div>
+          <div style={{ fontSize:14, fontWeight:600, color:C.green }}>All pumps normal</div>
+          <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>No active faults or warnings</div>
+        </div>
+      )}
+
+      <div style={{ height:4 }}/>
+    </div>
+  );
+}
+
+// ── Alerts screen ────────────────────────────────────────────
+function AlertsScreen() {
+  const alertPumps = YV.pumps.filter(p => p.status !== 'ok').sort((a,b) => a.status === 'fault' ? -1 : 1);
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'16px 14px 14px' }}>
+      <div style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.02em', marginBottom:14 }}>Alerts</div>
+      {alertPumps.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'48px 20px', color:C.muted }}>
+          <div style={{ fontSize:36, marginBottom:10 }}>✓</div>
+          All {YV.pumps.length} pumps running normally
+        </div>
+      ) : (
+        <div style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:16, overflow:'hidden' }}>
+          {alertPumps.map((p,i) => <AlertRow key={p.id} p={p} isLast={i===alertPumps.length-1}/>)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Customers screen ─────────────────────────────────────────
+function CustomersScreen() {
+  const [search, setSearch] = useState('');
+  const filtered = YV.pumps
+    .filter(p => !search
+      || p.customer.toLowerCase().includes(search.toLowerCase())
+      || (p.address||'').toLowerCase().includes(search.toLowerCase()))
+    .sort((a,b) => (a.customer||'').localeCompare(b.customer||''));
+
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'16px 14px 14px' }}>
+      <div style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.02em', marginBottom:12 }}>Customers</div>
+
+      <div style={{ display:'flex', alignItems:'center', gap:8, background:C.surface, border:`1px solid ${C.line}`, borderRadius:10, padding:'9px 12px', marginBottom:10, color:C.muted }}>
+        {Ico.search}
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name or address…"
+          style={{ background:'none', border:'none', outline:'none', color:C.text, fontFamily:'inherit', fontSize:14, flex:1 }}/>
+      </div>
+
+      <div style={{ fontSize:11, color:C.muted, marginBottom:10, fontVariantNumeric:'tabular-nums' }}>{filtered.length} customers</div>
+
+      {filtered.map(p => (
+        <div key={p.id} style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:14, padding:'13px 14px', marginBottom:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:sc[p.status]||C.muted, flexShrink:0 }}/>
+            <div style={{ fontSize:14, fontWeight:700, flex:1 }}>{p.customer}</div>
+            {p._live && <span style={{ fontSize:9, fontWeight:700, color:C.green, background:`${C.green}12`, border:`1px solid ${C.green}28`, borderRadius:3, padding:'1px 5px' }}>LIVE</span>}
+          </div>
+          <div style={{ fontSize:11, color:C.muted, marginBottom:8, lineHeight:1.4 }}>
+            {p.address}<br/>
+            <span style={{ color:C.faint }}>{p.model} · {p.region}</span>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:6, marginBottom:8 }}>
+            {[['COP', p.cop > 0 ? p.cop.toFixed(1) : '—'], ['Indoor', p.temp_indoor ? p.temp_indoor+'°' : '—'], ['Seen', p.last_seen]].map(([l,v]) => (
+              <div key={l} style={{ background:C.surface2, borderRadius:9, padding:7, textAlign:'center' }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{v}</div>
+                <div style={{ fontSize:9.5, color:C.faint, marginTop:1 }}>{l}</div>
+              </div>
+            ))}
+          </div>
+          {p.alerts.length > 0 && (
+            <div style={{ background:`${C.red}08`, border:`1px solid ${C.red}20`, borderRadius:8, padding:'5px 10px', fontSize:11, color:C.red, marginBottom:8 }}>
+              {p.alerts[0]}
+            </div>
+          )}
+          <div style={{ display:'flex', gap:6 }}>
+            {p.phone && <a href={`tel:${p.phone.replace(/\s/g,'')}`} style={{ fontSize:11, fontWeight:600, color:C.green, background:`${C.green}10`, border:`1px solid ${C.green}28`, borderRadius:8, padding:'7px 14px', textDecoration:'none' }}>Call</a>}
+            {p.email && <a href={`mailto:${p.email}`} style={{ fontSize:11, fontWeight:600, color:C.blue, background:`${C.blue}10`, border:`1px solid ${C.blue}28`, borderRadius:8, padding:'7px 14px', textDecoration:'none' }}>Email</a>}
+            <a href={`Tier2%20Service.html?pump=${p.id}`} style={{ fontSize:11, fontWeight:600, color:C.muted, background:'rgba(255,255,255,0.04)', border:`1px solid ${C.line}`, borderRadius:8, padding:'7px 14px', textDecoration:'none', flex:1, textAlign:'center' }}>Service →</a>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Service screen ───────────────────────────────────────────
+function ServiceScreen() {
+  const recent = [...YV.pumps].sort((a,b) => new Date(b.installed) - new Date(a.installed)).slice(0,5);
+  return (
+    <div style={{ flex:1, overflowY:'auto', padding:'16px 14px 14px' }}>
+      <div style={{ fontSize:22, fontWeight:700, letterSpacing:'-0.02em', marginBottom:4 }}>Service</div>
+      <div style={{ fontSize:12.5, color:C.muted, marginBottom:18 }}>Quick access to service tools</div>
+
+      {[
+        { label:'Service View',  sub:'Full fleet management',    href:'Tier2%20Service.html',       col:C.blue  },
+        { label:'Field App',     sub:'Technician job list',      href:'Tier25%20Field%20App.html',  col:C.green },
+        { label:'Full Dashboard',sub:'Desktop monitoring view',  href:'Tier1%20Dashboard.html',     col:C.muted },
+      ].map(item => (
+        <a key={item.label} href={item.href} style={{ textDecoration:'none' }}>
+          <div style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:14, padding:'14px 16px', marginBottom:10, display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{item.label}</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{item.sub}</div>
+            </div>
+            <span style={{ color:item.col }}>{Ico.arrow}</span>
+          </div>
+        </a>
+      ))}
+
+      <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:C.faint, margin:'20px 0 10px' }}>Recently Installed</div>
+      {recent.map(p => (
+        <a key={p.id} href={`Tier2%20Service.html?pump=${p.id}`} style={{ textDecoration:'none' }}>
+          <div style={{ background:C.surface, border:`1px solid ${C.line}`, borderRadius:12, padding:'11px 14px', marginBottom:8, display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:sc[p.status]||C.muted, flexShrink:0 }}/>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{p.customer}</div>
+              <div style={{ fontSize:10, color:C.muted, fontFamily:'ui-monospace,monospace' }}>{p.model} · {p.installed}</div>
+            </div>
+            <div style={{ fontSize:12, fontFamily:'ui-monospace,monospace', color:C.blue, fontWeight:600 }}>COP {p.cop.toFixed(1)}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+// ── App shell ────────────────────────────────────────────────
+function MobileApp() {
+  const [tab, setTab] = useState('overview');
+  const alertCount = YV.pumps.filter(p => p.status !== 'ok').length;
+
+  return (
+    <div style={{ background:C.bg, color:C.text, minHeight:'100vh', display:'flex', flexDirection:'column', WebkitFontSmoothing:'antialiased' }}>
+      <TopBar alertCount={alertCount} onBellClick={() => setTab('alerts')}/>
+      {tab === 'overview'  && <OverviewScreen  onViewAlerts={() => setTab('alerts')}/>}
+      {tab === 'alerts'    && <AlertsScreen/>}
+      {tab === 'customers' && <CustomersScreen/>}
+      {tab === 'service'   && <ServiceScreen/>}
+      <BottomNav active={tab} onChange={setTab} alertCount={alertCount}/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<MobileApp/>);
+</script>
+</body>
+</html>

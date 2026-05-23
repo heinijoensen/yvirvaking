@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yvirvaking">
+<meta name="theme-color" content="#0d1520">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="favicon.svg">
+<title>Yvirvaking — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="supabase.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; height: 100%;
+  background: #0d1520;
+  color: #eef2f7;
+  font-family: 'Outfit', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+/* Background texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(192,57,43,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(33,118,174,0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  background: #132030;
+  border: 1px solid #2a3f58;
+  border-radius: 16px;
+  padding: 40px 36px 36px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 1px 0 rgba(238,242,247,0.04) inset;
+}
+
+.logo-area {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #c0392b, #922b21);
+  border-radius: 14px;
+  margin-bottom: 14px;
+  box-shadow: 0 8px 24px rgba(192,57,43,0.35);
+}
+
+.logo-wordmark {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #eef2f7;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.logo-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: #4a6480;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7f9ab5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  background: #0d1520;
+  border: 1px solid #2a3f58;
+  border-radius: 9px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  color: #eef2f7;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #c0392b;
+  box-shadow: 0 0 0 3px rgba(192,57,43,0.18);
+}
+
+input[type="email"]::placeholder,
+input[type="password"]::placeholder {
+  color: #4a6480;
+}
+
+.sign-in-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px;
+  background: linear-gradient(135deg, #c0392b, #a93226);
+  border: none;
+  border-radius: 9px;
+  font-size: 15px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: 0.01em;
+  box-shadow: 0 4px 16px rgba(192,57,43,0.3);
+}
+
+.sign-in-btn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.sign-in-btn:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.sign-in-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg {
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(192,57,43,0.12);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e07065;
+  display: none;
+  line-height: 1.4;
+}
+
+.error-msg.visible {
+  display: block;
+}
+
+.footer-note {
+  margin-top: 28px;
+  text-align: center;
+  font-size: 11px;
+  color: #2a3f58;
+  letter-spacing: 0.03em;
+}
+
+/* Initial auth-check overlay */
+#precheck {
+  position: fixed;
+  inset: 0;
+  background: #0d1520;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 14px;
+}
+
+#precheck.hidden { display: none; }
+
+.precheck-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid rgba(238,242,247,0.1);
+  border-top-color: #c0392b;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.precheck-text {
+  color: rgba(238,242,247,0.35);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+</style>
+</head>
+<body>
+
+<!-- Session pre-check overlay -->
+<div id="precheck">
+  <div class="precheck-spinner"></div>
+  <div class="precheck-text">Checking session…</div>
+</div>
+
+<div class="login-card">
+  <div class="logo-area">
+    <div class="logo-mark">
+      <!-- Flame / heat icon -->
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+        <path d="M13 3C13 3 18 7 18 12.5C18 15.5 16.2 17.8 14.2 19.2C14.6 18.2 14.7 17 14.2 15.8C13.4 13.9 11.5 13 10.5 11C9.8 12.5 10 14.2 10.5 15.5C9 14.2 8 12.2 8 10C8 7 10.5 4.5 13 3Z" fill="rgba(255,255,255,0.9)"/>
+        <path d="M13 23C10.2 23 8 20.8 8 18C8 16.5 8.8 15.2 10 14.5C10.1 15.2 10.5 15.9 11.1 16.3C11.5 14.8 12.5 13.7 13.5 13C13.8 14.2 13.6 15.5 13 16.5C14.3 15.8 15 14.5 15 13C16.2 13.8 17 15.3 17 17C17 20.3 15.3 23 13 23Z" fill="rgba(255,255,255,0.6)"/>
+      </svg>
+    </div>
+    <div class="logo-wordmark">Yvirvaking</div>
+    <div class="logo-sub">Heat Pump Platform</div>
+  </div>
+
+  <form id="login-form" onsubmit="return false;">
+    <div class="form-group">
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@example.com" autocomplete="email" required>
+    </div>
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="sign-in-btn" id="submit-btn">
+      <span id="btn-label">Sign in</span>
+    </button>
+    <div class="error-msg" id="error-msg"></div>
+  </form>
+
+  <div class="footer-note">Yvirvaking &mdash; Faroe Islands &copy; 2025</div>
+</div>
+
+<script>
+(async function() {
+  // Role → home page map
+  const ROLE_MAP = {
+    admin:     'index.html',
+    installer: 'Tier25%20Field%20App.html',
+    customer:  'Tier3%20App.html',
+  };
+
+  function hidePrecheck() {
+    document.getElementById('precheck').classList.add('hidden');
+  }
+
+  // Check if already authenticated
+  if (window.YV_AUTH) {
+    try {
+      const session = await YV_AUTH.getSession();
+      if (session) {
+        const user = await YV_AUTH.getUser();
+        if (user) {
+          const role = user.profile?.role || 'customer';
+          window.location.replace(ROLE_MAP[role] || 'index.html');
+          return; // Stay on precheck overlay while redirecting
+        }
+      }
+    } catch (e) {
+      console.warn('[YV Login] Session check failed:', e.message);
+    }
+  }
+
+  hidePrecheck();
+
+  // Handle sign-in form
+  const form = document.getElementById('login-form');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const submitBtn = document.getElementById('submit-btn');
+  const btnLabel = document.getElementById('btn-label');
+  const errorMsg = document.getElementById('error-msg');
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+
+  function clearError() {
+    errorMsg.classList.remove('visible');
+    errorMsg.textContent = '';
+  }
+
+  function setLoading(loading) {
+    submitBtn.disabled = loading;
+    if (loading) {
+      btnLabel.textContent = 'Signing in…';
+      submitBtn.insertAdjacentHTML('afterbegin', '<span class="spinner" id="btn-spinner"></span>');
+    } else {
+      btnLabel.textContent = 'Sign in';
+      const spinner = document.getElementById('btn-spinner');
+      if (spinner) spinner.remove();
+    }
+  }
+
+  form.addEventListener('submit', async function() {
+    clearError();
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+      showError('Please enter your email and password.');
+      return;
+    }
+
+    if (!window.YV_AUTH) {
+      showError('Authentication service unavailable. Please reload the page.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { data, error } = await YV_AUTH.signIn(email, password);
+
+      if (error) {
+        setLoading(false);
+        if (error.message.toLowerCase().includes('invalid login')) {
+          showError('Invalid email or password. Please try again.');
+        } else if (error.message.toLowerCase().includes('email not confirmed')) {
+          showError('Please confirm your email address before signing in.');
+        } else {
+          showError(error.message || 'Sign-in failed. Please try again.');
+        }
+        return;
+      }
+
+      // Get user profile and redirect
+      const user = await YV_AUTH.getUser();
+      const role = user?.profile?.role || 'customer';
+      window.location.replace(ROLE_MAP[role] || 'index.html');
+
+    } catch (e) {
+      setLoading(false);
+      showError('An unexpected error occurred. Please try again.');
+      console.error('[YV Login]', e);
+    }
+  });
+
+  // Focus email field
+  emailInput.focus();
+})();
+</script>
+</body>
+</html>
