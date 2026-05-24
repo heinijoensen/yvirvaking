@@ -32,7 +32,7 @@ window.YVIRVAKING_CONFIG = {
     clientId:    'e35c4378-b6fc-4de8-ba86-0d409679b157',
     // clientSecret is NOT stored here — it lives in MYUPLINK_CLIENT_SECRET
     // on the server. Token exchange is proxied through /api/myuplink-token.
-    redirectUri: 'https://yvirvakingtest.netlify.app/index.html',
+    redirectUri: 'https://yvirvaking.vercel.app/index.html',
     scopes:      'READSYSTEM',
     authUrl:     'https://api.myuplink.com/oauth/authorize',
     apiBase:     'https://api.myuplink.com/v2',
