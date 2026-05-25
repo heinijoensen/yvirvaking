@@ -159,13 +159,14 @@
         let synced = 0;
         for (const dev of fleet) {
           const updates = {};
-          if (dev.cop           !== null) updates.cop          = dev.cop;
-          if (dev.roomTemp      !== null) updates.temp_indoor  = dev.roomTemp;
-          else if (dev.supplyTemp !== null) updates.temp_indoor = dev.supplyTemp;
           if (dev.outdoorTemp   !== null) updates.temp_outdoor = dev.outdoorTemp;
+          if (dev.supplyTemp    !== null) updates.temp_indoor  = dev.supplyTemp;
+          if (dev.cop           !== null) updates.cop          = dev.cop;
           updates.status    = dev.hasAlarm ? 'fault' : dev.hasWarn ? 'warning' : 'ok';
           updates.alerts    = dev.alarms?.map(a => a.header || a.description || '').filter(Boolean) ?? [];
           updates.last_seen = 'just now';
+          // Store extended readings in energy_today field as a proxy until schema is extended
+          if (dev.electricPower !== null) updates.energy_today = dev.electricPower;
 
           const { error } = await sb.from('pumps')
             .update(updates)

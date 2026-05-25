@@ -232,11 +232,9 @@ const MyUplink = (() => {
         const groups  = await getPoints(dev.id);
         const alarms  = await getAlarms(sys.systemId).catch(() => []);
 
-        // Flatten all parameter groups into a single lookup map
+        // Flatten parameters into a single lookup map (flat array per MyUplink v2)
         const points = {};
-        (groups || []).forEach(g => {
-          (g.parameters || []).forEach(p => { points[p.parameterId] = p; });
-        });
+        (groups || []).forEach(p => { points[p.parameterId] = p; });
 
         fleet.push({
           id:        dev.id,
@@ -249,15 +247,22 @@ const MyUplink = (() => {
           alarms,
           hasAlarm:  alarms.some(a => a.severity === 'Error'),
           hasWarn:   alarms.some(a => a.severity === 'Warning'),
-          // Common readings with fallback to null
-          outdoorTemp:  points[10001]?.value ?? null,
-          supplyTemp:   points[10002]?.value ?? null,
-          returnTemp:   points[10003]?.value ?? null,
-          hotWaterTemp: points[10006]?.value ?? null,
-          roomTemp:     points[10012]?.value ?? null,
-          setpoint:     points[47011]?.value ?? null,
-          cop:          points[40940]?.value ?? null,
-          mode:         points[49993]?.value ?? null,
+          // CTC GSi 612 parameter IDs (confirmed from device)
+          outdoorTemp:   points['62000']?.value ?? null,  // Outdoor Temperature
+          supplyTemp:    points['62011']?.value ?? null,  // Primary flow temp
+          returnTemp:    points['62015']?.value ?? null,  // Return flow
+          hotWaterTemp:  points['62276']?.value ?? null,  // Hot water tank temp
+          setpoint:      points['62007']?.value ?? null,  // Primary flow setpoint
+          electricPower: points['62168']?.value ?? null,  // Electric power kW
+          brineIn:       points['62087']?.value ?? null,  // Brine in (ground source)
+          brineOut:      points['62097']?.value ?? null,  // Brine out
+          compressorRPS: points['62193']?.value ?? null,  // Compressor RPS
+          degreeMinute:  points['62167']?.value ?? null,  // Degree minute
+          hwSetpoint:    points['61502']?.value ?? null,  // Hot water setpoint
+          // Not available on GSi 612:
+          roomTemp:      null,  // No indoor room sensor
+          cop:           null,  // No direct COP reading
+          mode:          points['62005']?.value ?? null,  // Status
         });
       }));
     }));
