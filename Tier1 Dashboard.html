@@ -597,16 +597,20 @@ function Dashboard() {
     YV.onUpdate(() => setPumpsVer(v => v + 1));
   }, []);
 
-  // Load real pump data from MyUplink, then sync notifications
+  // Sync live MyUplink readings → Supabase → in-memory YV.pumps, then notify
   useEffect(() => {
     if (!window.MyUplink) return;
     MyUplink.init().then(async () => {
       const authed = MyUplink.isAuthenticated();
       setMyuplinkAuth(authed);
       if (!authed) return;
-      await YV.loadLive();
-      const livePumps = YV.pumps.filter(p => p._live);
-      console.log(`[YV] Loaded ${livePumps.length} live pump(s):`, livePumps.map(p => `${p.id} (${p.serial || p.myuplink_device_id})`));
+      // syncMyUplink pushes live readings to Supabase and then reloads YV.pumps from DB
+      if (window.YV_AUTH?.syncMyUplink) {
+        const synced = await YV_AUTH.syncMyUplink();
+        console.log(`[YV] Synced ${synced} live device(s) to Supabase`);
+      } else {
+        await YV.loadLive(); // fallback if Supabase not available
+      }
       if (window.YV_NOTIFY) YV_NOTIFY.syncFromPumps(YV.pumps);
     });
   }, []);

@@ -11,7 +11,7 @@
     if (document.getElementById('yv-signout-pill')) return;
     const name = user?.profile?.name || user?.email || 'User';
     const role = user?.profile?.role || '';
-    const roleColor = { admin: '#e8a020', installer: '#2176ae', customer: '#1e9e5e' }[role] || '#7f9ab5';
+    const roleColor = { admin: '#F5C66B', installer: '#6BC4D6', customer: '#79D89F' }[role] || '#7f9ab5';
     const pill = document.createElement('div');
     pill.id = 'yv-signout-pill';
     pill.innerHTML = `
@@ -19,7 +19,7 @@
         #yv-signout-pill {
           position: fixed; bottom: 16px; right: 16px; z-index: 8888;
           display: flex; align-items: center; gap: 10px;
-          background: rgba(13,21,32,0.92); border: 1px solid rgba(42,63,88,0.9);
+          background: rgba(13,21,32,0.95); border: 1px solid rgba(42,63,88,0.9);
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
           border-radius: 999px; padding: 7px 14px 7px 10px;
           font-family: 'Outfit', sans-serif; font-size: 12px; color: #7f9ab5;
@@ -28,9 +28,9 @@
         }
         #yv-signout-pill .yv-pill-avatar {
           width: 24px; height: 24px; border-radius: 50%;
-          background: rgba(192,57,43,0.2); border: 1px solid rgba(192,57,43,0.4);
+          background: rgba(107,196,214,0.15); border: 1px solid rgba(107,196,214,0.35);
           display: flex; align-items: center; justify-content: center;
-          font-size: 11px; font-weight: 600; color: #c0392b; flex-shrink: 0;
+          font-size: 11px; font-weight: 600; color: #6BC4D6; flex-shrink: 0;
         }
         #yv-signout-pill .yv-pill-name { color: #eef2f7; font-weight: 500; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #yv-signout-pill .yv-pill-role { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
@@ -41,7 +41,7 @@
           display: flex; align-items: center; gap: 5px; transition: color 0.15s;
           white-space: nowrap;
         }
-        #yv-signout-pill .yv-pill-out:hover { color: #c0392b; }
+        #yv-signout-pill .yv-pill-out:hover { color: #F08A8A; }
         #yv-signout-pill .yv-pill-out svg { flex-shrink: 0; }
       </style>
       <div class="yv-pill-avatar">${name.charAt(0).toUpperCase()}</div>
@@ -118,7 +118,7 @@
                 The <code style="background:#132030;padding:2px 6px;border-radius:4px">profiles</code> table is missing.<br>
                 Run <strong>SCHEMA.sql</strong> in your Supabase SQL Editor, then reload.
               </div>
-              <button onclick="YV_AUTH.signOut()" style="background:#c0392b;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-family:Outfit,sans-serif;font-size:13px;cursor:pointer">Sign out</button>
+              <button onclick="YV_AUTH.signOut()" style="background:#F08A8A;color:#0b1422;border:none;border-radius:8px;padding:10px 20px;font-family:Outfit,sans-serif;font-size:13px;cursor:pointer;font-weight:600">Sign out</button>
             </div>`;
           return null;
         }
@@ -181,6 +181,9 @@
         if (synced === 0 && fleet.length > 0) {
           console.warn('[YV] No pumps matched by myuplink_device_id — check pumps table has device IDs set');
         }
+        // Refresh in-memory pump data so the UI reflects the new live readings
+        const _ld = window.YV?.loadFromSupabase || window.YV_loadFromSupabase;
+        if (_ld) await _ld();
         return synced;
       } catch (e) {
         console.warn('[YV] syncMyUplink error:', e.message);
