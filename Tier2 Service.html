@@ -1489,12 +1489,17 @@ function LangToggle() {
 // Main App
 function ServiceApp() {
   useLang();
+  const [pumpsVer, setPumpsVer] = useState(0);
   const [selectedId, setSelectedId] = useState(initPumpId);
   const [tab, setTab] = useState('overview');
   const [showQr, setShowQr] = useState(false);
   const [unread, setUnread] = useState(0);
   const pump = YV.pumps.find(p => p.id === selectedId) || YV.pumps[0];
   const col = statusColor[pump.status];
+
+  useEffect(() => {
+    if (window.YV) YV.onUpdate(() => setPumpsVer(v => v + 1));
+  }, []);
 
   useEffect(() => {
     if (window.YV_NOTIFY) YV_NOTIFY.syncFromPumps(YV.pumps);

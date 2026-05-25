@@ -1062,6 +1062,7 @@ function LangToggle() {
 // ── Main App ──────────────────────────────────────────────────
 function FieldApp() {
   useLang();
+  const [pumpsVer, setPumpsVer] = useState(0);
   const [screen, setScreen] = useState('today');
   const [activeJob, setActiveJob] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
@@ -1069,6 +1070,10 @@ function FieldApp() {
   const [onCall, setOnCall] = useState(window.YV_USERS?.getOnCallInstaller()?.id === 'I001');
   const [userName, setUserName] = useState('');
   const MY_INSTALLER = 'I001';
+
+  useEffect(() => {
+    if (window.YV) YV.onUpdate(() => setPumpsVer(v => v + 1));
+  }, []);
 
   // Load real jobs from Supabase
   const { jobs, loaded, updateStatus } = useJobs();

@@ -671,6 +671,11 @@ function App() {
   const [mode,     setMode]     = useState('normal');
   const [pump,     setPump]     = useState(null);
   const [userName, setUserName] = useState('');
+  const [pumpsVer, setPumpsVer] = useState(0);
+
+  useEffect(() => {
+    if (window.YV) YV.onUpdate(() => setPumpsVer(v => v + 1));
+  }, []);
 
   useEffect(() => {
     const load = () => {

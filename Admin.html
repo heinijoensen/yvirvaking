@@ -1458,10 +1458,15 @@ function ImportTab() {
 }
 
 function AdminApp() {
+  const [pumpsVer, setPumpsVer] = useState(0);
   const [companies, setCompanies] = useState(COMPANIES_INIT);
   const [selectedId, setSelectedId] = useState('c001');
   const [tab, setTab] = useState('overview');
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (window.YV) YV.onUpdate(() => setPumpsVer(v => v + 1));
+  }, []);
 
   const company = companies.find(c => c.id === selectedId);
   const filtered = companies.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.appName.toLowerCase().includes(search.toLowerCase()));
