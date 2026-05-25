@@ -200,7 +200,7 @@
       const yv = window.YV;
       if (!yv) { console.warn('[YV] loadFromSupabase: window.YV not available'); return; }
       try {
-        const { data: pumps, error: pErr } = await sb.from('pumps').select('*');
+        const { data: pumps, error: pErr } = await sb.from('pumps').select('*').order('id');
         if (pErr) { console.error('[YV] Pump load error:', pErr.message); }
         else if (pumps?.length) {
           yv.pumps = pumps.map(p => ({ ...p, alerts: Array.isArray(p.alerts) ? p.alerts : [] }));
